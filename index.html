@@ -1,278 +1,413 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Math Logic — 3D Arcade</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Math Logic Games</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#080d18;color:#f4f7ff;font:16px system-ui,Arial;overflow:hidden}
-#app{height:100vh;display:flex;flex-direction:column}
-header{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:linear-gradient(100deg,#101a2b,#172b43);border-bottom:1px solid #293a55}
-.logo{font-size:22px;font-weight:900;letter-spacing:1px}
-.logo span{color:#50d9ff}
-#menu{display:flex;gap:8px;flex-wrap:wrap;padding:10px;background:#0d1524;z-index:2}
-button{border:1px solid #405575;background:#1a2b43;color:white;border-radius:9px;padding:10px 13px;font-weight:700;cursor:pointer}
-button:hover,button.active{background:#147ca4;border-color:#62dfff}
-#status{padding:8px 16px;background:#101a2b;color:#b9cce7;font-size:14px;min-height:38px}
-#game{flex:1;min-height:0;position:relative;background:#05080d}
-canvas{display:block;width:100%;height:100%}
-#overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-#message{background:#0b1424dd;border:1px solid #4c6688;border-radius:16px;padding:18px 24px;text-align:center;max-width:520px;box-shadow:0 12px 50px #0008}
-#message h2{margin:0 0 8px;font-size:25px}
-#message p{margin:5px 0;color:#d1def2}
-@media(max-width:650px){
-header{height:54px}
-#menu{gap:5px}
-button{padding:8px;font-size:12px}
-#status{font-size:12px}
-}
+body{margin:0;background:#080d1c;color:white;font-family:Arial,sans-serif}
+header{text-align:center;padding:24px;background:#111b35}
+header h1{font-size:38px;margin:0;color:#58e6ff}
+header p{color:#bdc9e8}
+#menu{padding:22px;max-width:1100px;margin:auto}
+.games{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.game-card{background:#182647;border:1px solid #34517d;border-radius:14px;padding:20px;cursor:pointer;transition:.2s}
+.game-card:hover{transform:translateY(-4px);background:#243b67}
+.game-card h2{margin:5px 0 10px}
+.game-card p{color:#c3d0e8}
+button{background:#25c9e8;color:#061323;border:0;border-radius:9px;padding:11px 16px;font-weight:bold;cursor:pointer;margin:5px}
+button:hover{background:#8af0ff}
+#gameArea{display:none;text-align:center;padding:12px}
+#topbar{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:10px}
+#gameTitle{font-size:22px}
+#status{color:#ffe68a;min-height:25px}
+canvas{display:block;background:#101a30;border:2px solid #526c9b;border-radius:10px;width:min(96vw,900px);height:auto;margin:10px auto;touch-action:none}
+#help{color:#c5d2e9;line-height:1.6}
+#mapChoices{margin:8px}
+.hidden{display:none}
 </style>
 </head>
 <body>
-<div id="app">
 <header>
-<div class="logo">MATH <span>LOGIC</span> ARCADE</div>
-<div>3D GAME ZONE</div>
+<h1>⚡ MATH LOGIC ⚡</h1>
+<p>Choose a game. Play right here!</p>
 </header>
-<nav id="menu">
-<button data-game="tag">🏃 Tag Arena</button>
-<button data-game="race">🏎 Street Racer</button>
-<button data-game="zombie">🧟 Zombie Survival</button>
-<button data-game="soccer">⚽ Pro Soccer</button>
-<button data-game="parkour">🧗 Rooftop Parkour</button>
-<button data-game="battle">🎯 Battle Arena</button>
-<button id="reset">↻ Restart</button>
-</nav>
-<div id="status">Choose a game above. All games run inside this page.</div>
-<main id="game">
-<div id="overlay">
-<div id="message">
-<h2>Welcome to Math Logic</h2>
-<p>Choose one of the six games to start playing.</p>
-<p>WASD / arrows to move · Space to jump · Mouse click to shoot</p>
+
+<main id="menu">
+<div class="games">
+<div class="game-card" onclick="startGame('tag')">
+<h2>🏃 Tag Arena</h2><p>Three block characters, different maps, power-ups and a 120-second round.</p><button>PLAY</button>
+</div>
+<div class="game-card" onclick="startGame('race')">
+<h2>🚗 Street Racer</h2><p>Race down a highway while police cars chase you and fire shots.</p><button>PLAY</button>
+</div>
+<div class="game-card" onclick="startGame('zombie')">
+<h2>🧟 Zombie Survival</h2><p>Fight zombies with your blaster and survive as long as you can.</p><button>PLAY</button>
+</div>
+<div class="game-card" onclick="startGame('soccer')">
+<h2>⚽ Pro Soccer</h2><p>Play against AI defenders and kick the ball toward the goal.</p><button>PLAY</button>
+</div>
+<div class="game-card" onclick="startGame('parkour')">
+<h2>🏙️ Rooftop Parkour</h2><p>Jump between rooftops. Don't fall!</p><button>PLAY</button>
+</div>
+<div class="game-card" onclick="startGame('battle')">
+<h2>🎯 Battle Arena</h2><p>Move, jump and shoot targets in the arena.</p><button>PLAY</button>
 </div>
 </div>
+<p style="text-align:center;margin-top:25px">Secret code: enter <b>6767</b> below to unlock the secret message.</p>
+<div style="text-align:center"><input id="secret" placeholder="Enter secret code" style="padding:10px;border-radius:8px"><button onclick="unlock()">UNLOCK</button><p id="secretMessage"></p></div>
 </main>
+
+<section id="gameArea">
+<div id="topbar">
+<span id="gameTitle"></span>
+<button onclick="restartGame()">RESTART</button>
+<button onclick="goHome()">BACK TO GAMES</button>
 </div>
+<div id="mapChoices" class="hidden"></div>
+<div id="status"></div>
+<canvas id="game" width="900" height="520"></canvas>
+<div id="help"></div>
+</section>
 
-<script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+<script>
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+const menu=document.getElementById("menu");
+const area=document.getElementById("gameArea");
+const statusText=document.getElementById("status");
+const help=document.getElementById("help");
+const mapChoices=document.getElementById("mapChoices");
 
-const host=document.querySelector('#game');
-const status=document.querySelector('#status');
-const overlay=document.querySelector('#overlay');
+let mode="",running=false,keys={},objects=[],bullets=[],enemies=[];
+let player={},ball={},score=0,frame=0,timeLeft=120,lastIt=0;
+let currentMap="Sky City",tagPlayers=[],it=0,boosts=[],pads=[];
+let mouse={x:450,y:260,down:false};
+let animation=0;
 
-const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x91b9d5);
-scene.fog=new THREE.Fog(0x91b9d5,42,115);
-
-const camera=new THREE.PerspectiveCamera(65,1,.1,180);
-const renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.shadowMap.enabled=true;
-renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.12;
-renderer.outputColorSpace=THREE.SRGBColorSpace;
-host.appendChild(renderer.domElement);
-
-scene.add(new THREE.HemisphereLight(0xe5f5ff,0x526044,2.25));
-const fillLight=new THREE.DirectionalLight(0xb9dcff,.65);
-fillLight.position.set(16,10,-18);
-scene.add(fillLight);
-
-const sun=new THREE.DirectionalLight(0xffffff,2.4);
-sun.position.set(-12,24,14);
-sun.castShadow=true;
-sun.shadow.mapSize.set(2048,2048);
-scene.add(sun);
-
-const mat=(color,roughness=.8)=>new THREE.MeshStandardMaterial({color,roughness});
-const materials={
-grass:mat(0x477c48),road:mat(0x343b48),line:mat(0xf4d65c),
-blue:mat(0x168bdf),red:mat(0xe94b4b),gold:mat(0xffc247),
-dark:mat(0x263448),white:mat(0xf2f4f8),
-zombie:mat(0x6b9d55),building:mat(0x78889a)
+const maps={
+"Sky City":{sky:"#172c55",ground:"#405b80",platform:"#8ad9ef"},
+"Lava World":{sky:"#421b27",ground:"#9d392b",platform:"#ff9b4a"},
+"Ice World":{sky:"#153c5b",ground:"#79b9d9",platform:"#d9f7ff"}
 };
 
-let game='';
-let objects=[],players=[],enemies=[],projectiles=[],keys={};
-let clock=new THREE.Clock(),time=0,score=0,roundOver=false,tagger=0;
-let ball=null,car=null,velocity=0,jumpV=0,groundY=0,player=null,tagPlatforms=[];
-
-function add(mesh){scene.add(mesh);objects.push(mesh);return mesh}
-
-function box(x,y,z,sx,sy,sz,material,cast=true){
-let m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),material);
-m.position.set(x,y,z);
-m.castShadow=cast;
-m.receiveShadow=true;
-return add(m);
+function unlock(){
+ document.getElementById("secretMessage").textContent=
+ document.getElementById("secret").value==="6767"?"⭐ SECRET UNLOCKED! ⭐":"Wrong code. Try again!";
 }
 
-function sphere(x,y,z,r,material){
-let m=new THREE.Mesh(new THREE.SphereGeometry(r,18,14),material);
-m.position.set(x,y,z);
-m.castShadow=true;
-return add(m);
+function goHome(){
+ running=false;cancelAnimationFrame(animation);
+ area.style.display="none";menu.style.display="block";
+ mapChoices.classList.add("hidden");
 }
 
-function clear(){
-for(const o of objects)scene.remove(o);
-objects=[];players=[];enemies=[];projectiles=[];tagPlatforms=[];
-ball=null;car=null;player=null;score=0;time=0;
-roundOver=false;velocity=0;jumpV=0;groundY=0;tagger=0;
+function startGame(which){
+ mode=which;menu.style.display="none";area.style.display="block";
+ score=0;frame=0;objects=[];bullets=[];enemies=[];boosts=[];pads=[];
+ mapChoices.classList.add("hidden");
+ const titles={tag:"🏃 Tag Arena",race:"🚗 Street Racer",zombie:"🧟 Zombie Survival",soccer:"⚽ Pro Soccer",parkour:"🏙️ Rooftop Parkour",battle:"🎯 Battle Arena"};
+ document.getElementById("gameTitle").textContent=titles[mode];
+ if(mode==="tag") setupTag();
+ if(mode==="race") setupRace();
+ if(mode==="zombie") setupZombie();
+ if(mode==="soccer") setupSoccer();
+ if(mode==="parkour") setupParkour();
+ if(mode==="battle") setupBattle();
+ running=true;cancelAnimationFrame(animation);loop();
 }
 
-function floor(color=0x477c48,w=60,d=60){
-box(0,-.35,0,w,.7,d,mat(color),false);
+function restartGame(){startGame(mode)}
+
+function setupTag(){
+ timeLeft=120;it=0;lastIt=0;
+ tagPlayers=[
+ {x:130,y:390,vx:0,vy:0,color:"#31eaff",name:"P1",keys:["a","d","w"],it:true},
+ {x:450,y:390,vx:0,vy:0,color:"#ff5b83",name:"P2",keys:["ArrowLeft","ArrowRight","ArrowUp"]},
+ {x:740,y:390,vx:0,vy:0,color:"#ffe05b",name:"P3",keys:["j","l","i"]}
+ ];
+ pads=[{x:300,y:420,w:110,h:15},{x:520,y:350,w:120,h:15},{x:90,y:300,w:120,h:15},{x:680,y:260,w:120,h:15},{x:390,y:200,w:130,h:15}];
+ boosts=[
+ {x:250,y:390,type:"speed",color:"#38baff"},
+ {x:600,y:320,type:"jump",color:"#66ff85"},
+ {x:450,y:170,type:"star",color:"#ffe34d"}
+ ];
+ mapChoices.classList.remove("hidden");
+ mapChoices.innerHTML="<b>Choose your map:</b> ";
+ ["Sky City","Lava World","Ice World"].forEach(m=>{
+ let b=document.createElement("button");b.textContent=m;b.onclick=()=>{currentMap=m};mapChoices.appendChild(b);
+ });
+ help.innerHTML="P1: A/D move, W jump · P2: ←/→ move, ↑ jump · P3: J/L move, I jump<br>Touch another player to pass IT. Collect power-ups and use jump pads.";
 }
 
-function person(color,x,z){
-const g=new THREE.Group();
-const cloth=mat(color);
-const skin=mat(0xd9a783);
-const shoe=mat(0x202630);
-const trim=mat(0xe8eef6);
-
-if(color===0x00cfff){
-cloth.emissive=new THREE.Color(0x007da8);
-cloth.emissiveIntensity=1.15;
-cloth.metalness=.18;
-cloth.roughness=.28;
+function setupRace(){
+ player={x:450,y:410,speed:0,lane:0,health:3};
+ enemies=[{x:300,y:80},{x:580,y:20}];
+ bullets=[];score=0;
+ help.textContent="W/↑ accelerate · S/↓ brake · A/D or ←/→ steer. Dodge police shots and stay on the highway!";
 }
 
-const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.36,.62,6,12),cloth);
-torso.position.y=1.12;
-torso.castShadow=true;
-g.add(torso);
-
-const head=new THREE.Mesh(new THREE.SphereGeometry(.25,20,16),skin);
-head.position.y=1.88;
-head.castShadow=true;
-g.add(head);
-
-const hair=new THREE.Mesh(new THREE.SphereGeometry(.255,16,10,0,Math.PI*2,0,Math.PI*.48),mat(0x30251f));
-hair.position.y=2.0;
-g.add(hair);
-
-const eyeMat=mat(0x17202b);
-for(const xEye of [-.09,.09]){
-const eye=new THREE.Mesh(new THREE.SphereGeometry(.025,8,8),eyeMat);
-eye.position.set(xEye,1.9,.225);
-g.add(eye);
+function setupZombie(){
+ player={x:450,y:420,health:5};
+ enemies=[];bullets=[];score=0;
+ help.textContent="WASD or arrow keys to move · Mouse to aim · Click to shoot · Space to jump.";
 }
 
-const limbs=[];
-for(const side of [-1,1]){
-const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.105,.48,4,8),cloth);
-arm.position.set(side*.43,1.18,0);
-arm.rotation.z=side*.12;
-arm.castShadow=true;
-g.add(arm);
-limbs.push(arm);
-
-const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.13,.52,4,8),mat(0x263344));
-leg.position.set(side*.17,.48,0);
-leg.castShadow=true;
-g.add(leg);
-limbs.push(leg);
-
-const foot=new THREE.Mesh(new THREE.BoxGeometry(.22,.13,.34),shoe);
-foot.position.set(side*.17,.13,.07);
-g.add(foot);
+function setupSoccer(){
+ player={x:450,y:400,vx:0,vy:0};
+ ball={x:450,y:260,vx:0,vy:0};
+ enemies=[{x:300,y:160},{x:600,y:160},{x:450,y:100}];
+ score=0;
+ help.textContent="WASD or arrows to move · Press E to kick the ball toward the goal. Get past the AI defenders!";
 }
 
-const belt=new THREE.Mesh(new THREE.TorusGeometry(.28,.035,6,20),trim);
-belt.rotation.x=Math.PI/2;
-belt.position.y=.78;
-g.add(belt);
-
-g.userData.limbs=limbs;
-g.userData.phase=Math.random()*6;
-g.position.set(x,0,z);
-scene.add(g);
-objects.push(g);
-return g;
+function setupParkour(){
+ player={x:70,y:390,vx:0,vy:0};
+ objects=[{x:0,y:470,w:170,h:50},{x:220,y:410,w:110,h:20},{x:390,y:340,w:100,h:20},{x:550,y:270,w:100,h:20},{x:710,y:200,w:120,h:20},{x:850,y:140,w:100,h:20}];
+ help.textContent="A/D or arrows to move · W, ↑ or Space to jump. Land on the rooftops and reach the far end!";
 }
 
-function litBuilding(x,z,w,h,d,base=0x53677b,glow=0xffd27a){
-const b=box(x,h/2,z,w,h,d,mat(base,.92));
-const rows=Math.max(2,Math.floor(h/2.2));
-const cols=Math.max(2,Math.floor(w/1.25));
-
-for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
-const wx=x-w/2+(c+.5)*w/cols;
-const wy=1+(r+.5)*(h-1)/rows;
-const win=box(wx,wy,z-d/2-.035,w/cols*.48,.55,.07,mat((r+c)%4===0?glow:0x9dbbd0,.35),false);
-win.material.emissive=new THREE.Color((r+c)%4===0?glow:0x263b50);
-win.material.emissiveIntensity=(r+c)%4===0?.42:.08;
-}
-return b;
+function setupBattle(){
+ player={x:450,y:400,health:5};
+ enemies=[];bullets=[];score=0;
+ for(let i=0;i<5;i++) enemies.push({x:100+i*160,y:100+Math.random()*150,hp:1});
+ help.textContent="WASD or arrows to move · Mouse to aim · Click to shoot · Space to jump.";
 }
 
-function streetLamp(x,z,color=0xffdf9a){
-box(x,3,z,.13,6,.13,mat(0x26313c));
-box(x+.55,5.7,z,.95,.12,.12,mat(0x26313c));
-const bulb=sphere(x+.95,5.62,z,.2,mat(color,.25));
-bulb.material.emissive=new THREE.Color(color);
-bulb.material.emissiveIntensity=1.3;
-const light=new THREE.PointLight(color,1.5,12);
-light.position.set(x+.95,5.4,z);
-add(light);
+function keyDown(e){
+ keys[e.key]=true;
+ if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();
+ if(e.key==="e"||e.key==="E"){if(mode==="soccer")kickBall()}
+}
+function keyUp(e){keys[e.key]=false}
+window.addEventListener("keydown",keyDown);
+window.addEventListener("keyup",keyUp);
+
+canvas.addEventListener("mousemove",e=>{
+ const r=canvas.getBoundingClientRect();
+ mouse.x=(e.clientX-r.left)*canvas.width/r.width;
+ mouse.y=(e.clientY-r.top)*canvas.height/r.height;
+});
+canvas.addEventListener("mousedown",()=>{mouse.down=true;shoot()});
+window.addEventListener("mouseup",()=>mouse.down=false);
+canvas.addEventListener("touchstart",e=>{
+ const r=canvas.getBoundingClientRect(),t=e.touches[0];
+ mouse.x=(t.clientX-r.left)*canvas.width/r.width;
+ mouse.y=(t.clientY-r.top)*canvas.height/r.height;
+ mouse.down=true;shoot();e.preventDefault();
+},{passive:false});
+canvas.addEventListener("touchend",()=>mouse.down=false);
+
+function down(...names){return names.some(n=>keys[n])}
+function movePlayer(p,speed=4){
+ if(down("a","ArrowLeft"))p.x-=speed;
+ if(down("d","ArrowRight"))p.x+=speed;
+ if(down("w","ArrowUp"))p.y-=speed;
+ if(down("s","ArrowDown"))p.y+=speed;
+ p.x=Math.max(15,Math.min(885,p.x));
+ p.y=Math.max(20,Math.min(490,p.y));
+}
+function rect(x,y,w,h,color){
+ ctx.fillStyle=color;ctx.fillRect(x,y,w,h);
+}
+function circle(x,y,r,color){
+ ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+}
+function text(t,x,y,size=20,color="white"){
+ ctx.fillStyle=color;ctx.font="bold "+size+"px Arial";ctx.fillText(t,x,y);
+}
+function drawBackground(color="#142443"){
+ rect(0,0,900,520,color);
+}
+function drawFace(p){
+ rect(p.x-13,p.y-18,26,28,p.color);
+ circle(p.x-6,p.y-8,2,"#101323");circle(p.x+6,p.y-8,2,"#101323");
+ rect(p.x-5,p.y+2,10,2,"#101323");
+ if(p.it){
+ rect(p.x-13,p.y-29,26,7,"#ffdf35");
+ rect(p.x-8,p.y-38,16,10,"#ffdf35");
+ }
+}
+function loop(){
+ if(!running)return;
+ frame++;
+ ctx.clearRect(0,0,900,520);
+ if(mode==="tag") updateTag();
+ if(mode==="race") updateRace();
+ if(mode==="zombie") updateZombie();
+ if(mode==="soccer") updateSoccer();
+ if(mode==="parkour") updateParkour();
+ if(mode==="battle") updateBattle();
+ animation=requestAnimationFrame(loop);
 }
 
-function tree(x,z){
-box(x,.9,z,.35,1.8,.35,mat(0x62452d));
-const crown=sphere(x,2.8,z,1.35,mat(0x24583c));
-crown.scale.y=1.25;
+function updateTag(){
+ const m=maps[currentMap];drawBackground(m.sky);
+ rect(0,450,900,70,m.ground);
+ pads.forEach(p=>rect(p.x,p.y,p.w,p.h,m.platform));
+ pads.forEach(p=>{if(p.y>430)rect(p.x,p.y-8,p.w,8,m.platform)});
+ boosts.forEach(b=>{
+ circle(b.x,b.y,12,b.color);
+ text(b.type==="star"?"★":b.type==="speed"?"S":"J",b.x-6,b.y+5,14,"#14213a");
+ });
+ tagPlayers.forEach((p,i)=>{
+ let left=p.keys[0],right=p.keys[1],jump=p.keys[2];
+ if(keys[left])p.vx=-3.4;else if(keys[right])p.vx=3.4;else p.vx*=.75;
+ p.x+=p.vx;p.x=Math.max(15,Math.min(885,p.x));
+ if(keys[jump]&&p.grounded){p.vy=-10;p.grounded=false}
+ p.vy+=.45;p.y+=p.vy;p.grounded=false;
+ if(p.y>=430){p.y=430;p.vy=0;p.grounded=true}
+ pads.forEach(pl=>{
+ if(p.vy>=0&&p.x>pl.x-12&&p.x<pl.x+pl.w+12&&p.y>=pl.y-10&&p.y<pl.y+pl.h+10){
+ p.y=pl.y-12;p.vy=0;p.grounded=true;
+ }
+ });
+ if(p.y>510){p.y=420;p.vy=0}
+ boosts.forEach((b,j)=>{
+ if(Math.hypot(p.x-b.x,p.y-b.y)<24){
+ if(b.type==="speed")p.speedUntil=frame+480;
+ if(b.type==="jump")p.jumpUntil=frame+480;
+ if(b.type==="star"){p.speedUntil=frame+480;p.jumpUntil=frame+480}
+ boosts.splice(j,1);
+ }
+ });
+ if(p.speedUntil>frame)p.x+=p.vx*.5;
+ drawFace({...p,it:i===it});
+ });
+ if(frame%60===0)timeLeft--;
+ for(let i=0;i<3;i++)for(let j=i+1;j<3;j++){
+ let a=tagPlayers[i],b=tagPlayers[j];
+ if(Math.hypot(a.x-b.x,a.y-b.y)<28&&i===it){
+ it=j;lastIt=j;statusText.textContent=tagPlayers[j].name+" is IT!";
+ }
+ }
+ if(timeLeft<=0){
+ running=false;
+ statusText.textContent="TIME! Last player who was IT: "+tagPlayers[lastIt].name+" — choose a map and restart!";
+ text("ROUND OVER",330,240,38,"#ffe66d");
+ }else statusText.textContent="Map: "+currentMap+" | Time: "+timeLeft+" | "+tagPlayers[it].name+" is IT!";
 }
 
-function setMood(bg,fog,exposure=1.12){
-scene.background=new THREE.Color(bg);
-scene.fog=new THREE.Fog(fog,35,125);
-renderer.toneMappingExposure=exposure;
+function updateRace(){
+ drawBackground("#202a3a");
+ rect(230,0,440,520,"#333943");
+ for(let y=(frame*9)%80-80;y<520;y+=80)rect(447,y,7,42,"#e9e9e9");
+ rect(210,0,20,520,"#e5c65c");rect(670,0,20,520,"#e5c65c");
+ if(down("w","ArrowUp"))player.speed=Math.min(12,player.speed+.12);
+ else player.speed=Math.max(3,player.speed-.025);
+ if(down("s","ArrowDown"))player.speed=Math.max(0,player.speed-.2);
+ if(down("a","ArrowLeft"))player.x-=5;
+ if(down("d","ArrowRight"))player.x+=5;
+ player.x=Math.max(255,Math.min(645,player.x));
+ enemies.forEach((e,i)=>{
+ e.y+=player.speed*.6+1.5;
+ e.x+=(player.x-e.x)*.004;
+ if(e.y>580){e.y=-100;e.x=260+Math.random()*380;score++}
+ rect(e.x-20,e.y-35,40,65,"#d9e4f5");
+ rect(e.x-15,e.y-28,30,16,"#253a57");
+ if(frame%75===i*20){
+ bullets.push({x:e.x,y:e.y+30,vx:(player.x-e.x)*.012,vy:4});
+ }
+ });
+ bullets.forEach((b,i)=>{b.x+=b.vx;b.y+=b.vy;circle(b.x,b.y,6,"#ff4e42");
+ if(Math.hypot(b.x-player.x,b.y-420)<25){player.health--;b.y=600}
+ });
+ bullets=bullets.filter(b=>b.y<550);
+ rect(player.x-22,390,44,75,"#39d9ff");
+ rect(player.x-16,400,32,20,"#142d48");
+ text("POLICE: "+player.health+" | DISTANCE: "+score,15,30,18);
+ if(player.health<=0){endGame("The police caught you! Distance: "+score)}
 }
 
-function neonStrip(x,y,z,w,color){
-const m=box(x,y,z,w,.08,.08,mat(color,.25),false);
-m.material.emissive=new THREE.Color(color);
-m.material.emissiveIntensity=1.8;
+function shoot(){
+ if(!running||!["zombie","battle"].includes(mode))return;
+ let ox=player.x,oy=player.y;
+ let dx=mouse.x-ox,dy=mouse.y-oy,len=Math.hypot(dx,dy)||1;
+ bullets.push({x:ox,y:oy,vx:dx/len*10,vy:dy/len*10});
+}
+function updateShooter(){
+ movePlayer(player,4);
+ if(mouse.down&&frame%10===0)shoot();
+ bullets.forEach(b=>{b.x+=b.vx;b.y+=b.vy;circle(b.x,b.y,5,"#ffe35d")});
+ bullets=bullets.filter(b=>b.x>0&&b.x<900&&b.y>0&&b.y<520);
+ enemies.forEach(e=>{
+ let dx=player.x-e.x,dy=player.y-e.y,len=Math.hypot(dx,dy)||1;
+ if(mode==="zombie"){e.x+=dx/len*.7;e.y+=dy/len*.7}
+ bullets.forEach(b=>{if(Math.hypot(b.x-e.x,b.y-e.y)<20){e.hp=0;score++}});
+ if(Math.hypot(player.x-e.x,player.y-e.y)<25&&frame%40===0)player.health--;
+ circle(e.x,e.y,18,mode==="zombie"?"#73d34b":"#ff7b66");
+ circle(e.x-6,e.y-4,3,"#111");circle(e.x+6,e.y-4,3,"#111");
+ });
+ enemies=enemies.filter(e=>e.hp!==0);
+ if(frame%75===0)enemies.push({x:Math.random()*900,y:Math.random()*250,hp:1});
+ rect(player.x-14,player.y-18,28,36,mode==="zombie"?"#49c7ff":"#b38aff");
+ rect(player.x+8,player.y-5,25,9,"#cbd6e8");
+ text("HEALTH: "+player.health+" | SCORE: "+score,15,30);
+ if(player.health<=0)endGame("Game over! Score: "+score);
+}
+function updateZombie(){
+ drawBackground("#19251d");rect(0,470,900,50,"#344b32");
+ updateShooter();
+}
+function updateBattle(){
+ drawBackground("#24213d");rect(0,470,900,50,"#51436b");
+ updateShooter();
 }
 
-function setupCamera(x=0,y=18,z=24){
-camera.position.set(x,y,z);
-camera.lookAt(0,0,0);
+function kickBall(){
+ if(!running||mode!=="soccer")return;
+ let dx=ball.x-player.x,dy=ball.y-player.y,len=Math.hypot(dx,dy);
+ if(len<65){ball.vx=dx/(len||1)*12;ball.vy=dy/(len||1)*12-3}
+}
+function updateSoccer(){
+ drawBackground("#287b49");
+ rect(0,0,900,520,"#267b48");
+ ctx.strokeStyle="white";ctx.lineWidth=3;ctx.strokeRect(30,25,840,470);
+ ctx.beginPath();ctx.moveTo(450,25);ctx.lineTo(450,495);ctx.stroke();
+ ctx.beginPath();ctx.arc(450,260,65,0,Math.PI*2);ctx.stroke();
+ rect(0,180,25,160,"#eee");rect(875,180,25,160,"#eee");
+ movePlayer(player,4);
+ ball.x+=ball.vx;ball.y+=ball.vy;ball.vx*=.985;ball.vy*=.985;
+ if(ball.y<30||ball.y>490)ball.vy*=-.8;
+ if(ball.x<30||ball.x>870){
+ if(ball.x>870){score++;statusText.textContent="GOAL! Score: "+score}
+ ball.x=450;ball.y=260;ball.vx=0;ball.vy=0;
+ }
+ enemies.forEach(e=>{
+ let dx=ball.x-e.x,dy=ball.y-e.y,len=Math.hypot(dx,dy)||1;
+ e.x+=dx/len*1.5;e.y+=dy/len*1.5;
+ if(Math.hypot(e.x-player.x,e.y-player.y)<30){player.x-=dx/len*2;player.y-=dy/len*2}
+ circle(e.x,e.y,17,"#ff647a");
+ });
+ circle(ball.x,ball.y,12,"white");
+ circle(player.x,player.y,18,"#39dfff");
+ text("YOUR SCORE: "+score,20,30);
 }
 
-function say(title,txt){
-overlay.style.display='flex';
-document.querySelector('#message').innerHTML=`<h2>${title}</h2><p>${txt}</p>`;
-clearTimeout(window._introTimer);
-window._introTimer=setTimeout(hideMessage,4500);
+function updateParkour(){
+ drawBackground("#182743");
+ rect(0,470,900,50,"#253c4f");
+ objects.forEach(o=>rect(o.x,o.y,o.w,o.h,"#a8b7cc"));
+ if(down("a","ArrowLeft"))player.vx=-4;
+ else if(down("d","ArrowRight"))player.vx=4;
+ else player.vx*=.8;
+ if(down("w","ArrowUp"," ")&&player.grounded){player.vy=-12;player.grounded=false}
+ player.vy+=.55;player.x+=player.vx;player.y+=player.vy;player.grounded=false;
+ objects.forEach(o=>{
+ if(player.vy>=0&&player.x+12>o.x&&player.x-12<o.x+o.w&&player.y+18>=o.y&&player.y+18<o.y+o.h+12){
+ player.y=o.y-18;player.vy=0;player.grounded=true;
+ }
+ });
+ rect(player.x-12,player.y-18,24,36,"#45e2ff");
+ if(player.y>550){endGame("You fell! Press RESTART to try again.")}
+ if(player.x>870){endGame("🏆 You completed the rooftop parkour!")}
+ player.x=Math.max(10,Math.min(890,player.x));
 }
 
-function hideMessage(){overlay.style.display='none'}
-
-function start(name){
-game=name;
-clear();
-hideMessage();
-document.querySelectorAll('[data-game]').forEach(b=>b.classList.toggle('active',b.dataset.game===name));
-if(name==='tag')startTag();
-if(name==='race')startRace();
-if(name==='zombie')startZombie();
-if(name==='soccer')startSoccer();
-if(name==='parkour')startParkour();
-if(name==='battle')startBattle();
-updateStatus();
+function endGame(message){
+ running=false;statusText.textContent=message;text("GAME OVER",340,250,38,"#ffe56b");
 }
-
-function updateStatus(){
-const help={
-tag:'3 PLAYERS · P1 WASD (W jumps) · P2 ARROWS (↑ jumps) · P3 JKL + I jumps · Blue player is neon.',
-race:'W / ↑ accelerate · S / ↓ brake · A,D / ←,→ steer · Space handbrake.',
-zombie:'WASD / arrows move · Space jumps · Mouse click shoots · Survive the waves.',
-soccer:'WASD / arrows move · Space jumps · E kicks the ball.',
-parkour:'WASD / arrows move · Space jumps · Reach the glowing finish
+</script>
+</body>
+</html>
