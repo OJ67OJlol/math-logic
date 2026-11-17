@@ -2,555 +2,400 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Math Logic</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#0a1020;color:white;font-family:Arial;text-align:center}
-header{background:#172747;padding:25px;border-bottom:2px solid #25dfff}
-h1{color:#43e1ff;font-size:40px;margin:0}
-main{max-width:1000px;margin:auto;padding:20px}
-input,button{padding:12px;border:0;border-radius:8px;margin:5px;font-size:16px}
-input{max-width:90%}
-button{background:#26d5ed;color:#061323;font-weight:bold;cursor:pointer}
-button:hover{background:#8af2ff}
-#library,#player{display:none}
-.games{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:20px 0}
-.game{background:#192847;border:1px solid #405b86;border-radius:12px;padding:18px}
-.game h3{color:#54e5ff}
-.game button{width:100%}
-#player{background:#152442;padding:15px;border-radius:14px;margin-top:20px}
-canvas{width:100%;max-width:850px;height:auto;background:#07101e;border-radius:10px;display:block;margin:15px auto;touch-action:none}
-#score{font-size:22px;color:#ffe17b}
-#instructions{color:#d7e5ff}
-footer{padding:25px;color:#8496b7}
+body{margin:0;background:#101426;color:white;font-family:Arial,sans-serif;text-align:center}
+header{padding:25px;background:#19213b}
+h1{color:#65e6ff;margin:0;font-size:38px}
+main{max-width:1100px;margin:auto;padding:20px}
+input{padding:13px;border-radius:8px;border:0;font-size:17px;margin:8px}
+button{padding:12px 18px;border:0;border-radius:8px;background:#26c6da;color:#071321;font-weight:bold;cursor:pointer;margin:5px}
+button:hover{background:#72edff}
+#library{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:15px;margin-top:25px}
+.game{background:#202b49;padding:20px;border-radius:12px}
+.game h3{margin:8px}
+.game p{color:#c8d6ed;font-size:13px;min-height:34px}
+#playArea{display:none;margin-top:20px}
+canvas{background:#080d1b;border:3px solid #65e6ff;border-radius:10px;width:100%;max-width:850px;height:auto;touch-action:none}
+#status{font-size:18px;margin:12px}
+.small{color:#b9c9e8;font-size:13px}
 </style>
 </head>
 <body>
-
 <header>
-<h1>Math Logic</h1>
-<p>Learn • Play • Have Fun</p>
+<h1>🎮 Math Logic</h1>
+<p>Play games right here!</p>
 </header>
-
 <main>
-<h2>🔐 Unlock the Games</h2>
-<input id="secret" type="password" placeholder="Enter secret code">
-<button onclick="unlock()">Unlock</button>
+<section id="login">
+<h2>Unlock Math Logic</h2>
+<p>Enter your secret code to access the games.</p>
+<input id="secret" type="password" placeholder="Enter code">
+<button onclick="unlock()">UNLOCK</button>
 <p id="message"></p>
-
-<section id="library">
-<h2>🎮 Game Arcade</h2>
-<input id="search" placeholder="Search games..." oninput="searchGames()">
-<div class="games" id="gameList"></div>
 </section>
 
-<section id="player">
+<section id="gamesSection" style="display:none">
+<h2>Game Library</h2>
+<input id="search" placeholder="Search games..." oninput="showGames()">
+<div id="library"></div>
+</section>
+
+<section id="playArea">
 <h2 id="gameTitle"></h2>
-<p id="instructions"></p>
-<div id="score">Score: 0</div>
-<canvas id="canvas" width="850" height="480"></canvas>
+<p id="instructions" class="small"></p>
+<div id="status">Good luck!</div>
+<canvas id="gameCanvas" width="850" height="480"></canvas>
+<br>
 <button onclick="restartGame()">↻ Restart</button>
-<button onclick="backToGames()">← Back to Games</button>
+<button onclick="backToGames()">← Back to games</button>
 </section>
 </main>
 
-<footer>Math Logic © 2026</footer>
-
 <script>
 const games=[
-{name:"Battle Zone",code:"2060"},
-{name:"Neon Snake",code:"4049"},
-{name:"Turbo Trials",code:"4018"},
-{name:"Hoops Pro",code:"2040"},
-{name:"Neon Dash",code:"4024"}
+["Battle Zone","Arena battle: move and shoot."],
+["Neon Snake","Collect food and grow longer."],
+["Turbo Trials","Drive through an obstacle course."],
+["Hoops Pro","Move and shoot baskets."],
+["Neon Dash","Jump over obstacles."],
+["Tag Game","Three players chase each other!"],
+["Maze Runner","Find your way through the maze."],
+["Space Defender","Dodge and shoot incoming enemies."],
+["Pixel Racer","Race and avoid other cars."]
 ];
 
-const canvas=document.getElementById("canvas");
-const ctx=canvas.getContext("2d");
-
-let current="";
-let running=false;
-let score=0;
-let frame=0;
-let animation=0;
+let currentGame="";
 let keys={};
-let player={};
-let enemies=[];
-let bullets=[];
-let snake=[];
-let food={};
-let obstacles=[];
-let ball=null;
-let mouse={x:600,y:200,down:false};
+let state={};
+let animation;
 let lastTime=0;
+const canvas=document.getElementById("gameCanvas");
+const ctx=canvas.getContext("2d");
 
 function unlock(){
  if(document.getElementById("secret").value==="6767"){
-  document.getElementById("message").textContent="Games unlocked!";
-  document.getElementById("library").style.display="block";
-  showGames(games);
+  document.getElementById("login").style.display="none";
+  document.getElementById("gamesSection").style.display="block";
+  showGames();
  }else{
-  document.getElementById("message").textContent="Wrong code!";
+  document.getElementById("message").textContent="Wrong code. Try again!";
  }
 }
 
-function showGames(items){
- const list=document.getElementById("gameList");
- list.innerHTML="";
- items.forEach(game=>{
+function showGames(){
+ const search=document.getElementById("search").value.toLowerCase();
+ const library=document.getElementById("library");
+ library.innerHTML="";
+ games.forEach((g,i)=>{
+  if(!g[0].toLowerCase().includes(search))return;
   const card=document.createElement("div");
   card.className="game";
   const title=document.createElement("h3");
-  title.textContent=game.name;
-  const code=document.createElement("p");
-  code.textContent="Game code: "+game.code;
+  title.textContent="🎮 "+g[0];
+  const description=document.createElement("p");
+  description.textContent=g[1];
   const button=document.createElement("button");
   button.textContent="PLAY NOW";
-  button.onclick=()=>startGame(game.name);
-  card.append(title,code,button);
-  list.appendChild(card);
+  button.onclick=()=>startGame(g[0]);
+  card.append(title,description,button);
+  library.appendChild(card);
  });
-}
-
-function searchGames(){
- const q=document.getElementById("search").value.toLowerCase();
- showGames(games.filter(g=>(g.name+" "+g.code).toLowerCase().includes(q)));
-}
-
-function setScore(n){
- score=n;
- document.getElementById("score").textContent="Score: "+score;
-}
-
-function say(text){
- document.getElementById("instructions").textContent=text;
 }
 
 function startGame(name){
- cancelAnimationFrame(animation);
- current=name;
- running=true;
- frame=0;
- setScore(0);
- keys={};
- enemies=[];
- bullets=[];
- obstacles=[];
- ball=null;
-
- document.getElementById("library").style.display="none";
- document.getElementById("player").style.display="block";
+ currentGame=name;
+ document.getElementById("gamesSection").style.display="none";
+ document.getElementById("playArea").style.display="block";
  document.getElementById("gameTitle").textContent=name;
-
- if(name==="Battle Zone"){
-  player={x:425,y:240,hp:100};
-  say("Move with WASD or arrow keys. Aim with your mouse and click to shoot.");
-  for(let i=0;i<5;i++)newEnemy();
- }
-
- if(name==="Neon Snake"){
-  snake=[{x:10,y:7},{x:9,y:7},{x:8,y:7}];
-  player={dx:1,dy:0,nextX:1,nextY:0};
-  newFood();
-  say("Use arrow keys to move. Collect food and avoid the walls and yourself.");
- }
-
- if(name==="Turbo Trials"){
-  player={x:50,y:320,vx:0,vy:0,angle:0};
-  say("Use D or right arrow to accelerate. A or left arrow to brake. W and S to balance.");
- }
-
- if(name==="Hoops Pro"){
-  player={x:150,y:380};
-  say("Click or tap the court to shoot the basketball into the hoop.");
- }
-
- if(name==="Neon Dash"){
-  player={x:110,y:370,vy:0,ground:true};
-  say("Press SPACE, UP, or tap to jump over obstacles.");
- }
-
- lastTime=performance.now();
- animation=requestAnimationFrame(loop);
- document.getElementById("player").scrollIntoView({behavior:"smooth"});
-}
-
-function newEnemy(){
- const a=Math.random()*Math.PI*2;
- enemies.push({
-  x:Math.random()*850,
-  y:Math.random()*480,
-  hp:2,
-  speed:1+Math.random()
- });
-}
-
-function newFood(){
- food={
-  x:Math.floor(Math.random()*24),
-  y:Math.floor(Math.random()*13)
+ const instructions={
+  "Battle Zone":"Move with WASD or arrow keys. Press SPACE to shoot.",
+  "Neon Snake":"Move with WASD or arrow keys. Collect the food.",
+  "Turbo Trials":"Use A/D or arrow keys to steer. W to accelerate.",
+  "Hoops Pro":"Move with A/D or arrows. Press SPACE to shoot.",
+  "Neon Dash":"Press SPACE, W, or UP to jump.",
+  "Tag Game":"P1: WASD | P2: Arrow keys | P3: I J K L. Tag the other players!",
+  "Maze Runner":"Use WASD or arrow keys to reach the green exit.",
+  "Space Defender":"Move with WASD or arrows. Press SPACE to fire.",
+  "Pixel Racer":"Use A/D or arrow keys to steer. Avoid other cars."
  };
-}
-
-function backToGames(){
- running=false;
- cancelAnimationFrame(animation);
- document.getElementById("player").style.display="none";
- document.getElementById("library").style.display="block";
+ document.getElementById("instructions").textContent=instructions[name];
+ restartGame();
 }
 
 function restartGame(){
- if(current)startGame(current);
+ cancelAnimationFrame(animation);
+ keys={};
+ state={score:0,over:false,time:0};
+ if(currentGame==="Tag Game"){
+  state.players=[
+   {x:100,y:100,color:"#ff5577",name:"P1",controls:"wasd"},
+   {x:420,y:240,color:"#55d9ff",name:"P2",controls:"arrows"},
+   {x:700,y:370,color:"#ffe15c",name:"P3",controls:"ijkl"}
+  ];
+  state.tagged=0;
+ }else if(currentGame==="Neon Snake"){
+  state.snake=[{x:10,y:10}];
+  state.dx=1;state.dy=0;
+  state.food={x:18,y:10};
+  state.tick=0;
+ }else if(currentGame==="Maze Runner"){
+  state.player={x:35,y:35};
+  state.walls=[
+   [100,0,20,300],[200,180,20,300],[300,0,20,300],
+   [400,180,20,300],[500,0,20,300],[600,180,20,300],
+   [700,0,20,300]
+  ];
+ }else if(currentGame==="Hoops Pro"){
+  state.player={x:420,y:390};
+  state.ball=null;
+  state.baskets=0;
+ }else{
+  state.player={x:420,y:390};
+  state.items=[];
+  state.jump=0;
+  state.velocity=0;
+  state.spawn=0;
+ }
+ draw();
+ lastTime=0;
+ animation=requestAnimationFrame(loop);
 }
 
-function finish(text){
- running=false;
- say(text+" Press Restart to play again.");
+function backToGames(){
+ cancelAnimationFrame(animation);
+ document.getElementById("playArea").style.display="none";
+ document.getElementById("gamesSection").style.display="block";
+ keys={};
 }
 
-function loop(now){
- if(!running)return;
- const dt=Math.min((now-lastTime)/16.67,2);
- lastTime=now;
- frame++;
+window.addEventListener("keydown",e=>{
+ const k=e.key.toLowerCase();
+ if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(k))e.preventDefault();
+ keys[k]=true;
+});
+window.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
+
+function down(...list){return list.some(k=>keys[k])}
+function move(p,left,right,up,downKey,speed=4){
+ if(down(left))p.x-=speed;
+ if(down(right))p.x+=speed;
+ if(down(up))p.y-=speed;
+ if(down(downKey))p.y+=speed;
+ p.x=Math.max(15,Math.min(835,p.x));
+ p.y=Math.max(15,Math.min(465,p.y));
+}
+function rect(x,y,w,h,color){
+ ctx.fillStyle=color;ctx.fillRect(x,y,w,h);
+}
+function circle(x,y,r,color){
+ ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+}
+function text(t,x,y,size=20,color="white"){
+ ctx.fillStyle=color;ctx.font="bold "+size+"px Arial";ctx.fillText(t,x,y);
+}
+
+function loop(t){
+ if(!lastTime)lastTime=t;
+ let dt=Math.min((t-lastTime)/16,2);
+ lastTime=t;
  update(dt);
  draw();
- if(running)animation=requestAnimationFrame(loop);
+ animation=requestAnimationFrame(loop);
 }
 
 function update(dt){
- if(current==="Battle Zone")updateBattle(dt);
- if(current==="Neon Snake")updateSnake();
- if(current==="Turbo Trials")updateCar(dt);
- if(current==="Hoops Pro")updateHoops(dt);
- if(current==="Neon Dash")updateDash(dt);
-}
-
-/* BATTLE ZONE */
-function updateBattle(dt){
- let speed=3.5*dt;
- if(keys.w||keys.ArrowUp)player.y-=speed;
- if(keys.s||keys.ArrowDown)player.y+=speed;
- if(keys.a||keys.ArrowLeft)player.x-=speed;
- if(keys.d||keys.ArrowRight)player.x+=speed;
-
- player.x=Math.max(15,Math.min(835,player.x));
- player.y=Math.max(15,Math.min(465,player.y));
-
- if(mouse.down&&frame%8===0){
-  let a=Math.atan2(mouse.y-player.y,mouse.x-player.x);
-  bullets.push({x:player.x,y:player.y,vx:Math.cos(a)*10,vy:Math.sin(a)*10});
- }
-
- bullets.forEach(b=>{b.x+=b.vx*dt;b.y+=b.vy*dt});
- bullets=bullets.filter(b=>b.x>0&&b.x<850&&b.y>0&&b.y<480);
-
- enemies.forEach(e=>{
-  let a=Math.atan2(player.y-e.y,player.x-e.x);
-  e.x+=Math.cos(a)*e.speed*dt;
-  e.y+=Math.sin(a)*e.speed*dt;
-  if(Math.hypot(e.x-player.x,e.y-player.y)<22){
-   player.hp-=0.5*dt;
+ state.time+=dt;
+ const p=state.player;
+ if(currentGame==="Tag Game"){
+  const ps=state.players;
+  move(ps[0],"a","d","w","s",3.5*dt);
+  move(ps[1],"arrowleft","arrowright","arrowup","arrowdown",3.5*dt);
+  move(ps[2],"j","l","i","k",3.5*dt);
+  const tagged=ps[state.tagged];
+  for(let i=0;i<3;i++){
+   if(i!==state.tagged){
+    const other=ps[i];
+    if(Math.hypot(tagged.x-other.x,tagged.y-other.y)<32){
+     state.tagged=i;
+     document.getElementById("status").textContent=ps[i].name+" is IT! Keep chasing!";
+    }
+   }
   }
- });
+  return;
+ }
 
- bullets.forEach(b=>enemies.forEach(e=>{
-  if(Math.hypot(e.x-b.x,e.y-b.y)<20){
-   e.hp=0;
-   b.dead=true;
+ if(currentGame==="Neon Snake"){
+  state.tick+=dt;
+  if(down("w","arrowup")){state.dx=0;state.dy=-1}
+  if(down("s","arrowdown")){state.dx=0;state.dy=1}
+  if(down("a","arrowleft")){state.dx=-1;state.dy=0}
+  if(down("d","arrowright")){state.dx=1;state.dy=0}
+  if(state.tick>7){
+   state.tick=0;
+   let head={x:state.snake[0].x+state.dx,y:state.snake[0].y+state.dy};
+   head.x=(head.x+30)%30;head.y=(head.y+16)%16;
+   state.snake.unshift(head);
+   if(head.x===state.food.x&&head.y===state.food.y){
+    state.score++;
+    state.food={x:Math.floor(Math.random()*30),y:Math.floor(Math.random()*16)};
+   }else state.snake.pop();
+   if(state.snake.slice(1).some(s=>s.x===head.x&&s.y===head.y)){
+    state.snake=[{x:10,y:10}];state.score=0;
+   }
   }
- }));
-
- bullets=bullets.filter(b=>!b.dead);
- let old=enemies.length;
- enemies=enemies.filter(e=>e.hp>0);
- if(old>enemies.length){
-  setScore(score+old-enemies.length);
- }
- if(player.hp<=0){finish("You were defeated!");return}
- if(enemies.length===0){
-  for(let i=0;i<5+Math.floor(score/5);i++)newEnemy();
- }
-}
-
-/* NEON SNAKE */
-function updateSnake(){
- if(frame%9!==0)return;
-
- if(keys.ArrowUp&&player.dy!==1){player.nextX=0;player.nextY=-1}
- if(keys.ArrowDown&&player.dy!==-1){player.nextX=0;player.nextY=1}
- if(keys.ArrowLeft&&player.dx!==1){player.nextX=-1;player.nextY=0}
- if(keys.ArrowRight&&player.dx!==-1){player.nextX=1;player.nextY=0}
-
- player.dx=player.nextX;
- player.dy=player.nextY;
-
- let head={x:snake[0].x+player.dx,y:snake[0].y+player.dy};
-
- if(head.x<0||head.x>=25||head.y<0||head.y>=14||
- snake.some(p=>p.x===head.x&&p.y===head.y)){
-  finish("Snake crashed! Game over.");
   return;
  }
 
- snake.unshift(head);
- if(head.x===food.x&&head.y===food.y){
-  setScore(score+10);
-  newFood();
- }else snake.pop();
-}
-
-/* TURBO TRIALS */
-function updateCar(dt){
- if(keys.ArrowRight||keys.d)player.vx+=0.13*dt;
- if(keys.ArrowLeft||keys.a)player.vx-=0.09*dt;
- player.vx=Math.max(-3,Math.min(6,player.vx));
-
- player.vy+=0.23*dt;
- player.x+=player.vx*dt;
- player.y+=player.vy*dt;
-
- let ground=380+Math.sin(player.x/90)*20;
-
- if(player.y>ground-30){
-  player.y=ground-30;
-  player.vy=0;
-  if(keys.ArrowUp||keys.w)player.angle-=0.04*dt;
-  if(keys.ArrowDown||keys.s)player.angle+=0.04*dt;
- }else{
-  if(keys.ArrowUp||keys.w)player.angle-=0.04*dt;
-  if(keys.ArrowDown||keys.s)player.angle+=0.04*dt;
- }
-
- if(player.x<0){player.x=0;player.vx=0}
- player.angle=Math.max(-0.8,Math.min(0.8,player.angle));
- setScore(Math.max(score,Math.floor(player.x/10)));
-
- if(player.x>2100)finish("You completed Turbo Trials!");
- if(player.y>510)finish("Your car crashed!");
-}
-
-/* HOOPS PRO */
-function updateHoops(dt){
- if(!ball)return;
- ball.x+=ball.vx*dt;
- ball.y+=ball.vy*dt;
- ball.vy+=0.20*dt;
-
- if(!ball.scored&&ball.x>665&&ball.x<725&&ball.y>205&&ball.y<245&&ball.vy>0){
-  ball.scored=true;
-  setScore(score+2);
-  say("Nice shot! Click to shoot again.");
-  ball=null;
-  return;
- }
- if(ball.y>490||ball.x>870||ball.x<0){
-  ball=null;
- }
-}
-
-/* NEON DASH */
-function updateDash(dt){
- player.vy+=0.65*dt;
- player.y+=player.vy*dt;
-
- if(player.y>=370){
-  player.y=370;
-  player.vy=0;
-  player.ground=true;
- }
-
- if(frame%85===0){
-  obstacles.push({x:870,y:370,w:30+Math.random()*20,h:35+Math.random()*30});
- }
-
- obstacles.forEach(o=>o.x-=5*dt);
- obstacles=obstacles.filter(o=>o.x>-60);
-
- if(obstacles.some(o=>
-  player.x+22>o.x&&player.x-22<o.x+o.w&&
-  player.y+22>o.y-o.h
- )){
-  finish("You hit an obstacle!");
+ if(currentGame==="Maze Runner"){
+  move(p,"a","d","w","s",3*dt);
+  for(const w of state.walls){
+   if(p.x+12>w[0]&&p.x-12<w[0]+w[2]&&p.y+12>w[1]&&p.y-12<w[1]+w[3]){
+    if(down("a","arrowleft"))p.x+=3*dt;
+    if(down("d","arrowright"))p.x-=3*dt;
+    if(down("w","arrowup"))p.y+=3*dt;
+    if(down("s","arrowdown"))p.y-=3*dt;
+   }
+  }
+  if(p.x>800&&p.y>400){
+   document.getElementById("status").textContent="You escaped the maze! 🎉";
+  }
   return;
  }
 
- setScore(Math.floor(frame/10));
-}
+ if(currentGame==="Hoops Pro"){
+  move(p,"a","d","w","s",4*dt);
+  if(down(" ","enter")&&!state.ball){
+   state.ball={x:p.x,y:p.y-15,vx:(420-p.x)*.025,vy:-9};
+  }
+  if(state.ball){
+   state.ball.x+=state.ball.vx*dt;
+   state.ball.y+=state.ball.vy*dt;
+   state.ball.vy+=.25*dt;
+   if(state.ball.y<75&&state.ball.x>365&&state.ball.x<485){
+    state.baskets++;state.ball=null;
+   }else if(state.ball.y>480)state.ball=null;
+  }
+  return;
+ }
 
-function jump(){
- if(current==="Neon Dash"&&player.ground&&running){
-  player.vy=-12;
-  player.ground=false;
+ if(currentGame==="Battle Zone"||currentGame==="Space Defender"){
+  move(p,"a","d","w","s",4*dt);
+  state.spawn+=dt;
+  if(down(" ")&&state.spawn>8){
+   state.spawn=0;
+   state.items.push({x:p.x,y:p.y-15,v:-8,shot:true});
+  }
+  if(state.items.filter(i=>!i.shot).length<5&&Math.random()<.025*dt){
+   state.items.push({x:Math.random()*800+20,y:-10,v:2+Math.random()*2});
+  }
+  state.items.forEach(i=>i.y+=i.v*dt);
+  for(const i of state.items){
+   if(i.shot){
+    for(const enemy of state.items){
+     if(!enemy.shot&&Math.hypot(i.x-enemy.x,i.y-enemy.y)<18){
+      enemy.dead=true;i.dead=true;state.score++;
+     }
+    }
+   }else if(Math.hypot(i.x-p.x,i.y-p.y)<22){
+    i.dead=true;state.score=Math.max(0,state.score-1);
+   }
+  }
+  state.items=state.items.filter(i=>!i.dead&&i.y<500&&i.y>-30);
+  return;
+ }
+
+ if(currentGame==="Turbo Trials"||currentGame==="Pixel Racer"){
+  if(down("a","arrowleft"))p.x-=5*dt;
+  if(down("d","arrowright"))p.x+=5*dt;
+  p.x=Math.max(60,Math.min(790,p.x));
+  state.spawn+=dt;
+  if(state.spawn>22){
+   state.spawn=0;
+   state.items.push({x:80+Math.random()*690,y:-40});
+  }
+  state.items.forEach(i=>i.y+=(currentGame==="Turbo Trials"?5:7)*dt);
+  state.items=state.items.filter(i=>i.y<520);
+  state.items.forEach(i=>{
+   if(Math.abs(i.x-p.x)<38&&Math.abs(i.y-400)<45){
+    state.score=0;
+    i.y=600;
+   }
+  });
+  state.score+=.03*dt;
+  return;
+ }
+
+ if(currentGame==="Neon Dash"){
+  if(down(" ","w","arrowup")&&p.y>=390)p.vy=-11;
+  p.vy=(p.vy||0)+.5*dt;
+  p.y+=p.vy*dt;
+  if(p.y>390){p.y=390;p.vy=0}
+  state.spawn+=dt;
+  if(state.spawn>55){
+   state.spawn=0;state.items.push({x:850,y:400});
+  }
+  state.items.forEach(i=>i.x-=6*dt);
+  state.items=state.items.filter(i=>i.x>-30);
+  state.items.forEach(i=>{
+   if(Math.abs(i.x-p.x)<25&&p.y>360)state.score=0;
+  });
+  state.score+=.05*dt;
  }
 }
 
-/* DRAWING */
 function draw(){
  ctx.clearRect(0,0,850,480);
-
- if(current==="Battle Zone")drawBattle();
- if(current==="Neon Snake")drawSnake();
- if(current==="Turbo Trials")drawCar();
- if(current==="Hoops Pro")drawHoops();
- if(current==="Neon Dash")drawDash();
-}
-
-function drawBattle(){
- ctx.fillStyle="#101e35";
- ctx.fillRect(0,0,850,480);
- ctx.strokeStyle="#263b5a";
- for(let x=0;x<850;x+=40){
-  ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,480);ctx.stroke();
+ rect(0,440,850,40,"#18243c");
+ if(currentGame==="Tag Game"){
+  state.players.forEach((p,i)=>{
+   circle(p.x,p.y,19,p.color);
+   text(p.name,p.x-14,p.y-28,14);
+   if(i===state.tagged)text("IT!",p.x-10,p.y+42,16,"#ff7777");
+  });
+  text("TAG THE OTHER PLAYERS!",250,35,25);
+  text("P1: WASD     P2: ARROWS     P3: I J K L",180,465,16);
+ }else if(currentGame==="Neon Snake"){
+  state.snake.forEach((s,i)=>rect(s.x*28+1,s.y*28+1,25,25,i?"#36c9a0":"#b6ff70"));
+  circle(state.food.x*28+14,state.food.y*28+14,10,"#ff5577");
+  text("Score: "+state.score,15,25);
+ }else if(currentGame==="Maze Runner"){
+  state.walls.forEach(w=>rect(...w,"#637da9"));
+  rect(790,410,40,40,"#43e68c");
+  circle(state.player.x,state.player.y,13,"#ffdc5e");
+  text("Find the green exit!",20,25);
+ }else if(currentGame==="Hoops Pro"){
+  rect(350,55,150,12,"#f2a65a");
+  circle(425,65,23,"#ffcc55");
+  rect(390,80,70,8,"#ff5577");
+  circle(state.player.x,state.player.y,15,"#53dfff");
+  if(state.ball)circle(state.ball.x,state.ball.y,9,"#ff9c42");
+  text("Baskets: "+state.baskets,20,30);
+ }else if(currentGame==="Battle Zone"||currentGame==="Space Defender"){
+  state.items.forEach(i=>circle(i.x,i.y,i.shot?5:14,i.shot?"#fff":"#ff5577"));
+  circle(state.player.x,state.player.y,17,"#52e4ff");
+  text("Score: "+state.score,20,30);
+ }else if(currentGame==="Turbo Trials"||currentGame==="Pixel Racer"){
+  rect(200,0,450,480,"#202b3e");
+  rect(410,0,8,480,"#f5e8a5");
+  for(let y=0;y<480;y+=60)rect(418,y,5,30,"white");
+  state.items.forEach(i=>rect(i.x-17,i.y-25,34,50,"#ff5577"));
+  rect(state.player.x-20,375,40,60,"#55dfff");
+  text("Score: "+Math.floor(state.score),20,30);
+ }else if(currentGame==="Neon Dash"){
+  rect(0,420,850,20,"#384e70");
+  state.items.forEach(i=>rect(i.x,370,25,50,"#ff5577"));
+  rect(state.player.x-15,state.player.y-30,30,30,"#58e5ff");
+  text("Score: "+Math.floor(state.score),20,30);
  }
- for(let y=0;y<480;y+=40){
-  ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(850,y);ctx.stroke();
- }
-
- enemies.forEach(e=>{
-  ctx.fillStyle="#fa526d";
-  ctx.beginPath();ctx.arc(e.x,e.y,15,0,Math.PI*2);ctx.fill();
- });
- bullets.forEach(b=>{
-  ctx.fillStyle="#ffdf65";
-  ctx.beginPath();ctx.arc(b.x,b.y,5,0,Math.PI*2);ctx.fill();
- });
-
- let a=Math.atan2(mouse.y-player.y,mouse.x-player.x);
- ctx.save();ctx.translate(player.x,player.y);ctx.rotate(a);
- ctx.fillStyle="#41e2ff";ctx.fillRect(-13,-13,26,26);
- ctx.fillStyle="white";ctx.fillRect(0,-5,28,10);
- ctx.restore();
-
- ctx.fillStyle="white";ctx.font="18px Arial";
- ctx.fillText("HEALTH: "+Math.max(0,Math.ceil(player.hp)),15,25);
+ document.getElementById("status").textContent=
+  currentGame==="Tag Game"?"Player "+(state.tagged+1)+" is IT!":
+  currentGame==="Neon Snake"?"Score: "+state.score:
+  currentGame==="Hoops Pro"?"Baskets: "+state.baskets:
+  "Score: "+Math.floor(state.score||0);
 }
-
-function drawSnake(){
- ctx.fillStyle="#071321";ctx.fillRect(0,0,850,480);
- ctx.strokeStyle="#1c3048";
- for(let x=0;x<=850;x+=34){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,480);ctx.stroke()}
- for(let y=0;y<=480;y+=34){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(850,y);ctx.stroke()}
-
- ctx.fillStyle="#ff557e";
- ctx.beginPath();ctx.arc(food.x*34+17,food.y*34+17,12,0,7);ctx.fill();
-
- snake.forEach((p,i)=>{
-  ctx.fillStyle=i===0?"#75ffb5":"#20c98b";
-  ctx.fillRect(p.x*34+2,p.y*34+2,30,30);
- });
-}
-
-function drawCar(){
- ctx.fillStyle="#8bcaf2";ctx.fillRect(0,0,850,480);
- ctx.fillStyle="#e9f6ff";
- ctx.beginPath();ctx.arc(690,80,40,0,7);ctx.fill();
-
- ctx.fillStyle="#526f90";ctx.fillRect(0,280,850,100);
- for(let i=0;i<8;i++){
-  ctx.fillStyle="#8aa0b9";
-  ctx.fillRect(i*130-(player.x*.25%130),180,70,100);
- }
- ctx.fillStyle="#315d3d";ctx.fillRect(0,380,850,100);
- ctx.fillStyle="#f7e9b6";
- for(let x=0;x<850;x+=100)ctx.fillRect(x,410,50,5);
-
- ctx.save();ctx.translate(180,player.y);ctx.rotate(player.angle);
- ctx.fillStyle="#ff5949";ctx.fillRect(-35,-18,70,27);
- ctx.fillStyle="#c4f0ff";ctx.fillRect(-13,-34,30,20);
- ctx.fillStyle="#101820";
- ctx.beginPath();ctx.arc(-22,10,10,0,7);ctx.arc(23,10,10,0,7);ctx.fill();
- ctx.restore();
-
- ctx.fillStyle="white";ctx.font="20px Arial";
- ctx.fillText("FINISH →",740,350);
-}
-
-function drawHoops(){
- ctx.fillStyle="#c88952";ctx.fillRect(0,0,850,480);
- ctx.strokeStyle="#fff0d0";ctx.lineWidth=5;
- ctx.strokeRect(35,30,780,420);
- ctx.beginPath();ctx.arc(425,240,90,0,7);ctx.stroke();
- ctx.beginPath();ctx.moveTo(425,30);ctx.lineTo(425,450);ctx.stroke();
-
- ctx.fillStyle="#effaff";ctx.fillRect(700,140,12,100);
- ctx.fillStyle="#ffdc67";ctx.fillRect(665,220,55,7);
- ctx.strokeStyle="white";ctx.lineWidth=4;
- ctx.beginPath();ctx.moveTo(667,227);ctx.lineTo(677,265);ctx.lineTo(710,265);ctx.lineTo(718,227);ctx.stroke();
-
- ctx.fillStyle="#f07843";
- ctx.beginPath();ctx.arc(150,380,15,0,7);ctx.fill();
- ctx.strokeStyle="#ffe0a0";ctx.lineWidth=2;
- ctx.beginPath();ctx.moveTo(135,380);ctx.lineTo(165,380);ctx.stroke();
-
- if(ball){
-  ctx.fillStyle="#f07843";
-  ctx.beginPath();ctx.arc(ball.x,ball.y,13,0,7);ctx.fill();
- }
- ctx.fillStyle="white";ctx.font="18px Arial";
- ctx.fillText("SHOOTING COURT",20,25);
-}
-
-function drawDash(){
- ctx.fillStyle="#10172c";ctx.fillRect(0,0,850,480);
- for(let i=0;i<35;i++){
-  ctx.fillStyle="#283a60";
-  ctx.fillRect((i*97)%850,(i*53)%330,3,3);
- }
- ctx.fillStyle="#23385b";ctx.fillRect(0,395,850,85);
- ctx.strokeStyle="#32eaff";ctx.lineWidth=4;
- ctx.beginPath();ctx.moveTo(0,395);ctx.lineTo(850,395);ctx.stroke();
-
- obstacles.forEach(o=>{
-  ctx.fillStyle="#ff4d70";
-  ctx.fillRect(o.x,o.y-o.h,o.w,o.h);
- });
-
- ctx.save();ctx.translate(player.x,player.y);ctx.rotate(frame*.035);
- ctx.fillStyle="#52edff";ctx.fillRect(-20,-20,40,40);
- ctx.restore();
-
- ctx.fillStyle="white";ctx.font="18px Arial";
- ctx.fillText("DISTANCE: "+score,20,30);
-}
-
-/* KEYBOARD AND MOUSE */
-document.addEventListener("keydown",e=>{
- keys[e.key]=true;
- if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();
- if(e.key===" "||e.key==="ArrowUp")jump();
-});
-
-document.addEventListener("keyup",e=>{keys[e.key]=false});
-
-function pointerPosition(e){
- const r=canvas.getBoundingClientRect();
- return {
-  x:(e.clientX-r.left)*canvas.width/r.width,
-  y:(e.clientY-r.top)*canvas.height/r.height
- };
-}
-
-canvas.addEventListener("pointermove",e=>{
- mouse=pointerPosition(e);
-});
-
-canvas.addEventListener("pointerdown",e=>{
- mouse=pointerPosition(e);
- mouse.down=true;
-
- if(current==="Hoops Pro"&&!ball&&running){
-  const dx=mouse.x-150;
-  const dy=mouse.y-380;
-  ball={x:150,y:380,vx:dx*.045,vy:dy*.045};
- }
-
- if(current==="Neon Dash")jump();
-});
-
-canvas.addEventListener("pointerup",()=>mouse.down=false);
-canvas.addEventListener("pointerleave",()=>mouse.down=false);
 </script>
 </body>
 </html>
