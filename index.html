@@ -2,277 +2,370 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Math Logic</title>
-
 <style>
-* {
-    box-sizing: border-box;
-}
-
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #10152b;
-    color: white;
-    text-align: center;
-}
-
-header {
-    background: #202b50;
-    padding: 25px;
-}
-
-h1 {
-    color: #55e6ff;
-    font-size: 38px;
-}
-
-main {
-    max-width: 1000px;
-    margin: auto;
-    padding: 20px;
-}
-
-input, button {
-    padding: 12px;
-    border: 0;
-    border-radius: 8px;
-    margin: 5px;
-    font-size: 16px;
-}
-
-input {
-    max-width: 90%;
-}
-
-button {
-    background: #20c9e8;
-    color: #071323;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-button:hover {
-    background: #75efff;
-}
-
-#games {
-    display: none;
-}
-
-.game-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 12px;
-    margin: 25px 0;
-}
-
-.game-card {
-    background: #202b50;
-    border: 1px solid #435783;
-    border-radius: 12px;
-    padding: 18px 10px;
-}
-
-.game-card button {
-    width: 100%;
-}
-
-#player {
-    display: none;
-    margin-top: 25px;
-    background: #202b50;
-    padding: 15px;
-    border-radius: 12px;
-}
-
-iframe {
-    width: 100%;
-    height: 600px;
-    border: 0;
-    border-radius: 10px;
-    background: black;
-}
-
-#message {
-    color: #ffcc66;
-}
-
-footer {
-    padding: 25px;
-    color: #aab7d8;
-}
+*{box-sizing:border-box}
+body{margin:0;background:#0b1020;color:white;font-family:Arial,sans-serif;text-align:center}
+header{padding:22px;background:#172343;border-bottom:2px solid #29d9ff}
+h1{margin:0;color:#42dcff;font-size:38px}
+main{max-width:1000px;margin:auto;padding:20px}
+input,button{padding:12px;border:0;border-radius:8px;margin:5px;font-size:16px}
+input{max-width:90%;background:#fff}
+button{background:#26d5ed;color:#071323;font-weight:bold;cursor:pointer}
+button:hover{background:#8af2ff}
+button:disabled{opacity:.4}
+#library{display:none}
+.games{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:20px 0}
+.game{background:#192748;padding:18px;border:1px solid #3b5785;border-radius:12px}
+.game h3{color:#55e5ff}
+.game p{color:#c1cce2}
+#screen{display:none;background:#101a31;border:1px solid #3b5785;border-radius:14px;padding:12px;margin-top:20px}
+canvas{display:block;width:100%;max-width:850px;height:auto;margin:12px auto;background:#080e1d;border-radius:8px;touch-action:none}
+#gameTitle{color:#55e5ff}
+#instructions{color:#d5e2fa;line-height:1.5}
+#score{font-size:20px;color:#ffdf75}
+footer{padding:25px;color:#8292b5}
 </style>
 </head>
-
 <body>
 
 <header>
-    <h1>Math Logic</h1>
-    <p>Math • Learning • Games • Fun</p>
+<h1>Math Logic</h1>
+<p>Learn • Play • Have Fun</p>
 </header>
 
 <main>
+<h2>🔐 Unlock the Games</h2>
+<input id="secret" type="password" placeholder="Enter secret code">
+<button onclick="unlock()">Unlock</button>
+<p id="message"></p>
 
-    <h2>Calculator</h2>
-    <input id="calc" placeholder="Example: 10+5">
-    <button onclick="calculate()">Calculate</button>
-    <p id="answer"></p>
+<section id="library">
+<h2>🎮 Math Logic Game Arcade</h2>
+<input id="search" placeholder="Search games..." oninput="searchGames()">
+<div class="games" id="gameList"></div>
+</section>
 
-    <hr>
-
-    <h2>Unlock Games</h2>
-    <p>Enter the secret code to open the games.</p>
-
-    <input id="secret" type="password" placeholder="Enter secret code">
-    <button onclick="unlock()">Unlock</button>
-
-    <p id="message"></p>
-
-    <section id="games">
-        <h2>🎮 Game Library</h2>
-
-        <input
-            id="search"
-            placeholder="Search for a game..."
-            oninput="searchGames()"
-        >
-
-        <div class="game-list" id="gameList"></div>
-    </section>
-
-    <section id="player">
-        <h2 id="gameTitle">Game Player</h2>
-
-        <iframe
-            id="gameFrame"
-            allow="fullscreen; autoplay; gamepad; clipboard-read; clipboard-write"
-            allowfullscreen>
-        </iframe>
-
-        <p id="playerMessage">
-            If the game does not load, the game provider may block embedding.
-        </p>
-
-        <button onclick="openGameInNewTab()">Open Game in New Tab</button>
-        <button onclick="closeGame()">Close Game</button>
-        <button onclick="document.getElementById('gameFrame').requestFullscreen()">
-            Fullscreen
-        </button>
-    </section>
-
+<section id="screen">
+<h2 id="gameTitle">Game</h2>
+<p id="instructions"></p>
+<div id="score">Score: 0</div>
+<canvas id="gameCanvas" width="850" height="480"></canvas>
+<div>
+<button onclick="restartGame()">↻ Restart</button>
+<button onclick="stopGame()">← Back to Games</button>
+</div>
+<p id="mobileHelp">On a computer, use your keyboard and mouse. On a phone, tap the game screen.</p>
+</section>
 </main>
 
-<footer>
-    Math Logic © 2026
-</footer>
+<footer>Math Logic © 2026</footer>
 
 <script>
-const games = [
-    { name: "Ski Frenzy", code: "2034", url: "https://www.crazygames.com/game/ski-frenzy" },
-    { name: "Kour.io", code: "2036", url: "https://kour.io/" },
-    { name: "Basketball Legends", code: "2040", url: "https://www.crazygames.com/game/basketball-legends-2020" },
-    { name: "Krunker", code: "2060", url: "https://krunker.io/" },
-    { name: "Shell Shockers", code: "2062", url: "https://shellshock.io/" },
-    { name: "Drive Mad", code: "4018", url: "https://www.crazygames.com/game/drive-mad" },
-    { name: "Geometry Dash", code: "4024", url: "https://www.crazygames.com/game/geometry-dash-online" },
-    { name: "Slither.io", code: "4049", url: "https://slither.io/" },
-    { name: "Subway Surfers", code: "4056", url: "https://poki.com/en/g/subway-surfers" },
-    { name: "Retro Bowl", code: "4042", url: "https://www.crazygames.com/game/retro-bowl" },
-    { name: "Minecraft", code: "3011", url: "https://classic.minecraft.net/" },
-    { name: "Granny", code: "3003", url: "https://www.crazygames.com/game/granny" }
+const games=[
+ {name:"Battle Zone",code:"2060",desc:"Arena shooting and enemy battles"},
+ {name:"Neon Snake",code:"4049",desc:"Collect orbs and grow your snake"},
+ {name:"Turbo Trials",code:"4018",desc:"Drive over ramps and obstacles"},
+ {name:"Hoops Pro",code:"2040",desc:"Shoot baskets and beat your score"},
+ {name:"Neon Dash",code:"4024",desc:"Jump over obstacles and survive"}
 ];
 
-let currentGameUrl = "";
+const list=document.getElementById("gameList");
+const canvas=document.getElementById("gameCanvas");
+const ctx=canvas.getContext("2d");
+let current="",running=false,raf=0,score=0,keys={};
+let player={},objects=[],bullets=[],enemies=[],snake=[],food={};
+let last=0,frame=0,gameOver=false,mouse={x:600,y:200,down:false};
+let shot=null;
 
-function calculate() {
-    const expression = document.getElementById("calc").value;
-    const answer = document.getElementById("answer");
-
-    if (!/^[0-9+\-*/().\s]+$/.test(expression)) {
-        answer.textContent = "Please enter a valid math problem.";
-        return;
-    }
-
-    try {
-        const result = Function('"use strict"; return (' + expression + ')')();
-        answer.textContent = "Answer: " + result;
-    } catch {
-        answer.textContent = "That calculation is not valid.";
-    }
+function unlock(){
+ if(document.getElementById("secret").value==="6767"){
+  document.getElementById("library").style.display="block";
+  document.getElementById("message").textContent="Games unlocked!";
+  showGames(games);
+ }else{
+  document.getElementById("message").textContent="Wrong code. Try again.";
+ }
 }
-
-function unlock() {
-    const code = document.getElementById("secret").value;
-
-    if (code === "6767") {
-        document.getElementById("games").style.display = "block";
-        document.getElementById("message").textContent = "Games unlocked!";
-        showGames(games);
-    } else {
-        document.getElementById("message").textContent = "Wrong code. Try again.";
-    }
+function showGames(items){
+ list.innerHTML="";
+ items.forEach(g=>{
+  const d=document.createElement("div");
+  d.className="game";
+  d.innerHTML=`<h3>${g.name}</h3><p>${g.desc}</p><p>Game code: ${g.code}</p>`;
+  const b=document.createElement("button");
+  b.textContent="PLAY NOW";
+  b.onclick=()=>startGame(g.name);
+  d.appendChild(b);list.appendChild(d);
+ });
 }
-
-function showGames(list) {
-    const gameList = document.getElementById("gameList");
-    gameList.innerHTML = "";
-
-    list.forEach(game => {
-        const card = document.createElement("div");
-        card.className = "game-card";
-
-        const title = document.createElement("h3");
-        title.textContent = game.name;
-
-        const code = document.createElement("p");
-        code.textContent = "Code: " + game.code;
-
-        const button = document.createElement("button");
-        button.textContent = "PLAY";
-        button.onclick = () => playGame(game);
-
-        card.append(title, code, button);
-        gameList.appendChild(card);
-    });
+function searchGames(){
+ const q=document.getElementById("search").value.toLowerCase();
+ showGames(games.filter(g=>(g.name+" "+g.code).toLowerCase().includes(q)));
 }
-
-function searchGames() {
-    const search = document.getElementById("search").value.toLowerCase();
-
-    const filtered = games.filter(game =>
-        game.name.toLowerCase().includes(search) ||
-        game.code.includes(search)
-    );
-
-    showGames(filtered);
+function say(t){document.getElementById("instructions").textContent=t}
+function setScore(n){score=n;document.getElementById("score").textContent="Score: "+score}
+function startGame(name){
+ current=name;running=true;gameOver=false;frame=0;setScore(0);
+ document.getElementById("screen").style.display="block";
+ document.getElementById("library").style.display="none";
+ document.getElementById("gameTitle").textContent=name;
+ cancelAnimationFrame(raf);
+ initGame();last=performance.now();raf=requestAnimationFrame(loop);
+ document.getElementById("screen").scrollIntoView({behavior:"smooth"});
 }
-
-function playGame(game) {
-    currentGameUrl = game.url;
-
-    document.getElementById("gameTitle").textContent = game.name;
-    document.getElementById("gameFrame").src = game.url;
-    document.getElementById("player").style.display = "block";
-
-    document.getElementById("player").scrollIntoView({
-        behavior: "smooth"
-    });
+function stopGame(){
+ running=false;cancelAnimationFrame(raf);
+ document.getElementById("screen").style.display="none";
+ document.getElementById("library").style.display="block";
 }
-
-function openGameInNewTab() {
-    if (currentGameUrl) {
-        window.open(currentGameUrl, "_blank", "noopener");
-    }
+function restartGame(){if(current)startGame(current)}
+function initGame(){
+ keys={};objects=[];bullets=[];enemies=[];shot=null;
+ if(current==="Battle Zone"){
+  player={x:425,y:240,hp:100};
+  say("WASD or arrow keys to move. Aim with your mouse and click to shoot. Survive the enemy waves!");
+  spawnEnemies();
+ }
+ if(current==="Neon Snake"){
+  snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}];
+  player={dx:1,dy:0,nextX:1,nextY:0};
+  food={x:16,y:10};say("Use arrow keys to move. Collect the glowing food. Don't hit the walls or yourself!");
+ }
+ if(current==="Turbo Trials"){
+  player={x:80,y:320,vx:0,vy:0,angle:0};
+  say("Hold RIGHT or D to accelerate. LEFT or A to brake. Use UP or W to balance your car in the air. Reach the finish!");
+ }
+ if(current==="Hoops Pro"){
+  player={x:150,y:380};
+  shot=null;say("Click or tap the court to shoot. Aim toward the hoop. Try to score as many baskets as possible!");
+ }
+ if(current==="Neon Dash"){
+  player={x:110,y:370,vy:0,ground:true};
+  objects=[];say("Press SPACE, UP, or tap to jump. Avoid the red obstacles. How far can you go?");
+ }
 }
-
-function closeGame() {
-    document.getElementById("gameFrame").src = "about:blank";
-    document.getElementById("player").style.display = "none";
-    currentGameUrl = "";
+function spawnEnemies(){
+ for(let i=0;i<4+Math.floor(score/5);i++){
+  const a=Math.random()*Math.PI*2;
+  enemies.push({x:425+Math.cos(a)*380,y:240+Math.sin(a)*250,hp:2,speed:1+Math.random()*.5});
+ }
 }
+function endGame(text){
+ gameOver=true;running=false;
+ say(text+" Press Restart to play again.");
+}
+function loop(now){
+ if(!running)return;
+ const dt=Math.min((now-last)/16.67,2);last=now;frame++;
+ update(dt);draw();
+ if(running)raf=requestAnimationFrame(loop);
+}
+function update(dt){
+ if(current==="Battle Zone")updateBattle(dt);
+ if(current==="Neon Snake")updateSnake(dt);
+ if(current==="Turbo Trials")updateCar(dt);
+ if(current==="Hoops Pro")updateHoops(dt);
+ if(current==="Neon Dash")updateDash(dt);
+}
+function updateBattle(dt){
+ if(frame%220===0)spawnEnemies();
+ const speed=3.3*dt;
+ if(keys.w||keys.ArrowUp)player.y-=speed;
+ if(keys.s||keys.ArrowDown)player.y+=speed;
+ if(keys.a||keys.ArrowLeft)player.x-=speed;
+ if(keys.d||keys.ArrowRight)player.x+=speed;
+ player.x=Math.max(18,Math.min(832,player.x));
+ player.y=Math.max(18,Math.min(462,player.y));
+ if(mouse.down&&frame%9===0){
+  const a=Math.atan2(mouse.y-player.y,mouse.x-player.x);
+  bullets.push({x:player.x,y:player.y,vx:Math.cos(a)*9,vy:Math.sin(a)*9});
+ }
+ bullets.forEach(b=>{b.x+=b.vx*dt;b.y+=b.vy*dt});
+ bullets=bullets.filter(b=>b.x>0&&b.x<850&&b.y>0&&b.y<480);
+ enemies.forEach(e=>{
+  const a=Math.atan2(player.y-e.y,player.x-e.x);
+  e.x+=Math.cos(a)*e.speed*dt;e.y+=Math.sin(a)*e.speed*dt;
+  if(Math.hypot(e.x-player.x,e.y-player.y)<23){
+   player.hp-=.4*dt;
+   if(player.hp<=0)endGame("You were defeated!");
+  }
+ });
+ bullets.forEach(b=>enemies.forEach(e=>{
+  if(Math.hypot(e.x-b.x,e.y-b.y)<19){e.hp=0;b.dead=true}
+ }));
+ bullets=bullets.filter(b=>!b.dead);
+ const before=enemies.length;
+ enemies=enemies.filter(e=>e.hp>0);
+ if(enemies.length<before)setScore(score+before-enemies.length);
+}
+function updateSnake(dt){
+ if(frame%9!==0)return;
+ if(keys.ArrowUp&&player.dy!==1){player.nextX=0;player.nextY=-1}
+ if(keys.ArrowDown&&player.dy!==-1){player.nextX=0;player.nextY=1}
+ if(keys.ArrowLeft&&player.dx!==1){player.nextX=-1;player.nextY=0}
+ if(keys.ArrowRight&&player.dx!==-1){player.nextX=1;player.nextY=0}
+ player.dx=player.nextX;player.dy=player.nextY;
+ const head={x:snake[0].x+player.dx,y:snake[0].y+player.dy};
+ if(head.x<0||head.x>=25||head.y<0||head.y>=14||
+ snake.some(p=>p.x===head.x&&p.y===head.y)){
+  endGame("Game over! Your snake crashed.");return;
+ }
+ snake.unshift(head);
+ if(head.x===food.x&&head.y===food.y){
+  setScore(score+10);
+  food={x:Math.floor(Math.random()*25),y:Math.floor(Math.random()*14)};
+ }else snake.pop();
+}
+function updateCar(dt){
+ const ground=380+Math.sin(player.x/90)*22;
+ if(keys.ArrowRight||keys.d)player.vx+=.13*dt;
+ if(keys.ArrowLeft||keys.a)player.vx-=.09*dt;
+ player.vx=Math.max(-3,Math.min(6,player.vx));
+ player.vy+=.23*dt;
+ player.x+=player.vx*dt;
+ player.y+=player.vy*dt;
+ if(player.y>ground-30){player.y=ground-30;player.vy=0;
+  if(keys.ArrowUp||keys.w)player.angle-=.045*dt;
+  else player.angle*=.94;
+ }else{
+  if(keys.ArrowUp||keys.w)player.angle-=.04*dt;
+  if(keys.ArrowDown||keys.s)player.angle+=.04*dt;
+ }
+ player.angle=Math.max(-.8,Math.min(.8,player.angle));
+ if(player.x<0){player.x=0;player.vx=0}
+ setScore(Math.max(score,Math.floor(player.x/10)));
+ if(player.x>2100)endGame("You finished the course!");
+ if(player.y>500)endGame("Your car crashed!");
+}
+function updateHoops(dt){
+ if(!shot)return;
+ shot.x+=shot.vx*dt;shot.y+=shot.vy*dt;shot.vy+=.22*dt;
+ if(shot.x>650&&shot.x<710&&shot.y>200&&shot.y<235&&shot.vy>0){
+  setScore(score+2);shot=null;
+ }
+ else if(shot.y>480||shot.x>850||shot.x<0){shot=null}
+}
+function updateDash(dt){
+ frame++;
+ player.vy+=.65*dt;player.y+=player.vy*dt;
+ if(player.y>=370){player.y=370;player.vy=0;player.ground=true}
+ if(frame%85===0)objects.push({x:870,y:370,w:30+Math.random()*18,h:35+Math.random()*25});
+ objects.forEach(o=>o.x-=5*dt);
+ objects=objects.filter(o=>o.x>-60);
+ if(objects.some(o=>player.x+27>o.x&&player.x-22<o.x+o.w&&player.y+25>o.y-o.h)){
+  endGame("You hit an obstacle!");return;
+ }
+ setScore(Math.floor(frame/10));
+}
+function draw(){
+ ctx.clearRect(0,0,850,480);
+ if(current==="Battle Zone")drawBattle();
+ if(current==="Neon Snake")drawSnake();
+ if(current==="Turbo Trials")drawCar();
+ if(current==="Hoops Pro")drawHoops();
+ if(current==="Neon Dash")drawDash();
+ if(gameOver){
+  ctx.fillStyle="rgba(0,0,0,.65)";ctx.fillRect(0,0,850,480);
+  ctx.fillStyle="white";ctx.font="bold 38px Arial";ctx.textAlign="center";
+  ctx.fillText("GAME OVER",425,230);
+  ctx.font="20px Arial";ctx.fillText("Press Restart to try again",425,270);
+ }
+}
+function drawBattle(){
+ ctx.fillStyle="#111e32";ctx.fillRect(0,0,850,480);
+ ctx.strokeStyle="#263a55";ctx.lineWidth=1;
+ for(let x=0;x<850;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,480);ctx.stroke()}
+ for(let y=0;y<480;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(850,y);ctx.stroke()}
+ ctx.fillStyle="#f34c62";
+ enemies.forEach(e=>{ctx.beginPath();ctx.arc(e.x,e.y,15,0,7);ctx.fill()});
+ ctx.fillStyle="#ffdf65";
+ bullets.forEach(b=>{ctx.beginPath();ctx.arc(b.x,b.y,5,0,7);ctx.fill()});
+ const a=Math.atan2(mouse.y-player.y,mouse.x-player.x);
+ ctx.save();ctx.translate(player.x,player.y);ctx.rotate(a);
+ ctx.fillStyle="#4ce5ff";ctx.fillRect(-13,-13,26,26);
+ ctx.fillStyle="#dffaff";ctx.fillRect(0,-5,27,10);ctx.restore();
+ ctx.fillStyle="white";ctx.font="16px Arial";ctx.textAlign="left";
+ ctx.fillText("HEALTH: "+Math.max(0,Math.ceil(player.hp)),15,25);
+}
+function drawSnake(){
+ ctx.fillStyle="#071321";ctx.fillRect(0,0,850,480);
+ ctx.strokeStyle="#1b2d45";
+ for(let x=0;x<=850;x+=34){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,480);ctx.stroke()}
+ for(let y=0;y<=480;y+=34){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(850,y);ctx.stroke()}
+ ctx.fillStyle="#ff557e";ctx.beginPath();ctx.arc(food.x*34+17,food.y*34+17,12,0,7);ctx.fill();
+ snake.forEach((p,i)=>{ctx.fillStyle=i===0?"#75ffb5":"#21c88a";ctx.fillRect(p.x*34+2,p.y*34+2,30,30)});
+}
+function drawCar(){
+ ctx.fillStyle="#9bd8fa";ctx.fillRect(0,0,850,480);
+ ctx.fillStyle="#e9f6ff";ctx.beginPath();ctx.arc(680,85,42,0,7);ctx.fill();
+ ctx.fillStyle="#627e9c";ctx.fillRect(0,0,850,310);
+ for(let i=0;i<8;i++){ctx.fillStyle="#829bb3";ctx.fillRect(i*130-(player.x*.25%130),180,70,130)}
+ ctx.fillStyle="#315d3d";ctx.fillRect(0,380,850,100);
+ ctx.fillStyle="#f7e9b6";
+ for(let x=0;x<850;x+=100)ctx.fillRect(x,410,50,5);
+ ctx.save();ctx.translate(180,player.y);ctx.rotate(player.angle);
+ ctx.fillStyle="#ff5b49";ctx.fillRect(-35,-18,70,27);
+ ctx.fillStyle="#bdeaff";ctx.fillRect(-13,-34,30,20);
+ ctx.fillStyle="#101820";
+ ctx.beginPath();ctx.arc(-22,10,10,0,7);ctx.arc(23,10,10,0,7);ctx.fill();
+ ctx.restore();
+ ctx.fillStyle="white";ctx.font="20px Arial";ctx.fillText("FINISH →",740,345);
+}
+function drawHoops(){
+ ctx.fillStyle="#c98750";ctx.fillRect(0,0,850,480);
+ ctx.fillStyle="#d99b60";ctx.fillRect(0,0,850,480);
+ ctx.strokeStyle="#fff1d1";ctx.lineWidth=5;
+ ctx.strokeRect(35,30,780,420);
+ ctx.beginPath();ctx.arc(425,240,90,0,7);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(425,30);ctx.lineTo(425,450);ctx.stroke();
+ ctx.fillStyle="#e9f6ff";ctx.fillRect(700,140,12,100);
+ ctx.fillStyle="#ffdf6b";ctx.fillRect(665,220,55,7);
+ ctx.strokeStyle="#f4f4f4";ctx.lineWidth=4;
+ ctx.beginPath();ctx.moveTo(667,227);ctx.lineTo(677,265);ctx.lineTo(710,265);ctx.lineTo(718,227);ctx.stroke();
+ ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(150,380,18,0,7);ctx.fill();
+ ctx.fillStyle="#e85a36";ctx.beginPath();ctx.arc(150,380,15,0,7);ctx.fill();
+ ctx.strokeStyle="#ffe2a5";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(135,380);ctx.lineTo(165,380);ctx.stroke();
+ if(shot){ctx.fillStyle="#ef713e";ctx.beginPath();ctx.arc(shot.x,shot.y,13,0,7);ctx.fill()}
+ ctx.fillStyle="white";ctx.font="18px Arial";ctx.fillText("SHOOTING COURT",20,25);
+}
+function drawDash(){
+ ctx.fillStyle="#10172c";ctx.fillRect(0,0,850,480);
+ for(let i=0;i<35;i++){ctx.fillStyle="#283a60";ctx.fillRect((i*97)%850,(i*53)%330,3,3)}
+ ctx.fillStyle="#23385b";ctx.fillRect(0,395,850,85);
+ ctx.strokeStyle="#32eaff";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(0,395);ctx.lineTo(850,395);ctx.stroke();
+ ctx.fillStyle="#ff4d70";
+ objects.forEach(o=>{ctx.fillRect(o.x,o.y-o.h,o.w,o.h)});
+ ctx.save();ctx.translate(player.x,player.y);ctx.rotate(frame*.035);
+ ctx.fillStyle="#52edff";ctx.fillRect(-20,-20,40,40);ctx.restore();
+ ctx.fillStyle="white";ctx.font="18px Arial";ctx.fillText("DISTANCE: "+score,20,30);
+}
+function jump(){
+ if(current==="Neon Dash"&&player.ground&&!gameOver){player.vy=-12;player.ground=false}
+}
+document.addEventListener("keydown",e=>{
+ keys[e.key]=true;
+ if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();
+ if(e.key===" "||e.key==="ArrowUp")jump();
+ if(current==="Neon Snake"&&e.key.startsWith("Arrow")){}
+});
+document.addEventListener("keyup",e=>keys[e.key]=false);
+function pointerPos(e){
+ const r=canvas.getBoundingClientRect();
+ return {x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height};
+}
+canvas.addEventListener("pointermove",e=>{mouse=pointerPos(e)});
+canvas.addEventListener("pointerdown",e=>{
+ const p=pointerPos(e);mouse=p;mouse.down=true;
+ if(current==="Hoops Pro"&&!shot&&!gameOver){
+  const dx=p.x-150,dy=p.y-380;
+  shot={x:150,y:380,vx:dx*.045,vy:dy*.045};
+ }
+ if(current==="Neon Dash")jump();
+});
+canvas.addEventListener("pointerup",()=>mouse.down=false);
+canvas.addEventListener("pointerleave",()=>mouse.down=false);
 </script>
-
 </body>
 </html>
