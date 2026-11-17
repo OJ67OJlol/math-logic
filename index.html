@@ -2,95 +2,98 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Math Logic</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Math Logic 3D</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#101426;color:white;font-family:Arial,sans-serif;text-align:center}
-header{padding:25px;background:#19213b}
-h1{color:#65e6ff;margin:0;font-size:38px}
-main{max-width:1100px;margin:auto;padding:20px}
-input{padding:13px;border-radius:8px;border:0;font-size:17px;margin:8px}
-button{padding:12px 18px;border:0;border-radius:8px;background:#26c6da;color:#071321;font-weight:bold;cursor:pointer;margin:5px}
-button:hover{background:#72edff}
-#library{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:15px;margin-top:25px}
-.game{background:#202b49;padding:20px;border-radius:12px}
-.game h3{margin:8px}
-.game p{color:#c8d6ed;font-size:13px;min-height:34px}
-#playArea{display:none;margin-top:20px}
-canvas{background:#080d1b;border:3px solid #65e6ff;border-radius:10px;width:100%;max-width:850px;height:auto;touch-action:none}
-#status{font-size:18px;margin:12px}
-.small{color:#b9c9e8;font-size:13px}
+body{margin:0;background:#090f1e;color:white;font-family:Arial,sans-serif}
+header{text-align:center;padding:24px;background:#121f39;border-bottom:2px solid #28c8e9}
+h1{margin:0;color:#54e5ff;font-size:38px}
+main{max-width:1150px;margin:auto;padding:20px}
+input{padding:13px;border:0;border-radius:8px;font-size:16px}
+button{padding:12px 18px;border:0;border-radius:8px;background:#28c8e9;color:#071321;font-weight:bold;cursor:pointer;margin:5px}
+button:hover{background:#8ceeff}
+#library{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-top:20px}
+.game{background:#182743;border:1px solid #304866;border-radius:13px;padding:18px}
+.game h3{color:#6de9ff}
+.game p{color:#bdcce0;min-height:35px}
+#screen{display:none}
+#gamebox{position:relative;background:#000;border:2px solid #42d9ff;border-radius:12px;overflow:hidden}
+#gamebox canvas{display:block;width:100%;height:auto}
+#hud{position:absolute;left:12px;top:10px;background:#071321cc;padding:10px;border-radius:8px;pointer-events:none}
+#help{color:#b9cde5;line-height:1.6}
+#message{color:#ffe47b;min-height:25px}
 </style>
 </head>
 <body>
 <header>
-<h1>🎮 Math Logic</h1>
-<p>Play games right here!</p>
+<h1>🎮 MATH LOGIC 3D</h1>
+<p>Explore. Race. Jump. Play.</p>
 </header>
 <main>
 <section id="login">
 <h2>Unlock Math Logic</h2>
-<p>Enter your secret code to access the games.</p>
-<input id="secret" type="password" placeholder="Enter code">
+<p>Enter your secret code to play.</p>
+<input id="secret" type="password" placeholder="Secret code">
 <button onclick="unlock()">UNLOCK</button>
 <p id="message"></p>
 </section>
 
-<section id="gamesSection" style="display:none">
-<h2>Game Library</h2>
+<section id="librarySection" style="display:none">
+<h2>3D Game Library</h2>
 <input id="search" placeholder="Search games..." oninput="showGames()">
 <div id="library"></div>
 </section>
 
-<section id="playArea">
-<h2 id="gameTitle"></h2>
-<p id="instructions" class="small"></p>
-<div id="status">Good luck!</div>
-<canvas id="gameCanvas" width="850" height="480"></canvas>
-<br>
-<button onclick="restartGame()">↻ Restart</button>
-<button onclick="backToGames()">← Back to games</button>
+<section id="screen">
+<h2 id="gameTitle">Game</h2>
+<div id="gamebox">
+<div id="hud">Loading 3D world...</div>
+</div>
+<p id="help"></p>
+<button onclick="restart()">↻ Restart</button>
+<button onclick="back()">← Game library</button>
+<p id="messageGame"></p>
 </section>
 </main>
 
-<script>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
 const games=[
-["Battle Zone","Arena battle: move and shoot."],
-["Neon Snake","Collect food and grow longer."],
-["Turbo Trials","Drive through an obstacle course."],
-["Hoops Pro","Move and shoot baskets."],
-["Neon Dash","Jump over obstacles."],
-["Tag Game","Three players chase each other!"],
-["Maze Runner","Find your way through the maze."],
-["Space Defender","Dodge and shoot incoming enemies."],
-["Pixel Racer","Race and avoid other cars."]
+ ["3D Tag Game","Three players chase and tag each other.","tag"],
+ ["3D Racing","Drive around a track and avoid obstacles.","race"],
+ ["3D Obby","Jump between platforms and avoid falling.","obby"],
+ ["Space Defender","Fly through space and shoot enemy ships.","space"],
+ ["3D Soccer","Kick the ball into the goal.","soccer"]
 ];
 
-let currentGame="";
+let scene,camera,renderer,clock;
+let active="",running=false,frame=0;
+let players=[],ball,car,ship;
+let obstacles=[],bullets=[],enemies=[],platforms=[];
+let score=0,tagged=0,gameOver=false;
 let keys={};
-let state={};
-let animation;
-let lastTime=0;
-const canvas=document.getElementById("gameCanvas");
-const ctx=canvas.getContext("2d");
+let spawnTimer=0;
+let worldObjects=[];
+
+const box=document.getElementById("gamebox");
+const hud=document.getElementById("hud");
+const help=document.getElementById("help");
 
 function unlock(){
  if(document.getElementById("secret").value==="6767"){
   document.getElementById("login").style.display="none";
-  document.getElementById("gamesSection").style.display="block";
+  document.getElementById("librarySection").style.display="block";
   showGames();
- }else{
-  document.getElementById("message").textContent="Wrong code. Try again!";
- }
+ }else document.getElementById("message").textContent="Wrong code. Try again.";
 }
 
 function showGames(){
- const search=document.getElementById("search").value.toLowerCase();
+ const q=document.getElementById("search").value.toLowerCase();
  const library=document.getElementById("library");
  library.innerHTML="";
- games.forEach((g,i)=>{
-  if(!g[0].toLowerCase().includes(search))return;
+ games.filter(g=>g[0].toLowerCase().includes(q)).forEach(g=>{
   const card=document.createElement("div");
   card.className="game";
   const title=document.createElement("h3");
@@ -98,77 +101,385 @@ function showGames(){
   const description=document.createElement("p");
   description.textContent=g[1];
   const button=document.createElement("button");
-  button.textContent="PLAY NOW";
-  button.onclick=()=>startGame(g[0]);
+  button.textContent="PLAY GAME";
+  button.onclick=()=>start(g[2]);
   card.append(title,description,button);
   library.appendChild(card);
  });
 }
 
-function startGame(name){
- currentGame=name;
- document.getElementById("gamesSection").style.display="none";
- document.getElementById("playArea").style.display="block";
- document.getElementById("gameTitle").textContent=name;
- const instructions={
-  "Battle Zone":"Move with WASD or arrow keys. Press SPACE to shoot.",
-  "Neon Snake":"Move with WASD or arrow keys. Collect the food.",
-  "Turbo Trials":"Use A/D or arrow keys to steer. W to accelerate.",
-  "Hoops Pro":"Move with A/D or arrows. Press SPACE to shoot.",
-  "Neon Dash":"Press SPACE, W, or UP to jump.",
-  "Tag Game":"P1: WASD | P2: Arrow keys | P3: I J K L. Tag the other players!",
-  "Maze Runner":"Use WASD or arrow keys to reach the green exit.",
-  "Space Defender":"Move with WASD or arrows. Press SPACE to fire.",
-  "Pixel Racer":"Use A/D or arrow keys to steer. Avoid other cars."
- };
- document.getElementById("instructions").textContent=instructions[name];
- restartGame();
+function addBox(x,y,z,w,h,d,color,material={}){
+ const mesh=new THREE.Mesh(
+  new THREE.BoxGeometry(w,h,d),
+  new THREE.MeshStandardMaterial({color,...material})
+ );
+ mesh.position.set(x,y,z);
+ mesh.castShadow=true;
+ mesh.receiveShadow=true;
+ scene.add(mesh);
+ worldObjects.push(mesh);
+ return mesh;
 }
 
-function restartGame(){
- cancelAnimationFrame(animation);
- keys={};
- state={score:0,over:false,time:0};
- if(currentGame==="Tag Game"){
-  state.players=[
-   {x:100,y:100,color:"#ff5577",name:"P1",controls:"wasd"},
-   {x:420,y:240,color:"#55d9ff",name:"P2",controls:"arrows"},
-   {x:700,y:370,color:"#ffe15c",name:"P3",controls:"ijkl"}
-  ];
-  state.tagged=0;
- }else if(currentGame==="Neon Snake"){
-  state.snake=[{x:10,y:10}];
-  state.dx=1;state.dy=0;
-  state.food={x:18,y:10};
-  state.tick=0;
- }else if(currentGame==="Maze Runner"){
-  state.player={x:35,y:35};
-  state.walls=[
-   [100,0,20,300],[200,180,20,300],[300,0,20,300],
-   [400,180,20,300],[500,0,20,300],[600,180,20,300],
-   [700,0,20,300]
-  ];
- }else if(currentGame==="Hoops Pro"){
-  state.player={x:420,y:390};
-  state.ball=null;
-  state.baskets=0;
- }else{
-  state.player={x:420,y:390};
-  state.items=[];
-  state.jump=0;
-  state.velocity=0;
-  state.spawn=0;
+function addSphere(x,y,z,r,color){
+ const mesh=new THREE.Mesh(
+  new THREE.SphereGeometry(r,24,16),
+  new THREE.MeshStandardMaterial({color,roughness:.6})
+ );
+ mesh.position.set(x,y,z);
+ mesh.castShadow=true;
+ scene.add(mesh);
+ return mesh;
+}
+
+function makePlayer(color,x,z){
+ const group=new THREE.Group();
+ const body=new THREE.Mesh(
+  new THREE.CapsuleGeometry(.38,.65,5,12),
+  new THREE.MeshStandardMaterial({color,roughness:.45})
+ );
+ body.position.y=1.05;
+ body.castShadow=true;
+ group.add(body);
+ const head=new THREE.Mesh(
+  new THREE.SphereGeometry(.3,20,16),
+  new THREE.MeshStandardMaterial({color:0xffd3ac})
+ );
+ head.position.y=1.85;
+ head.castShadow=true;
+ group.add(head);
+ const eyeMat=new THREE.MeshStandardMaterial({color:0x111827});
+ for(const side of [-1,1]){
+  const eye=new THREE.Mesh(new THREE.SphereGeometry(.035,8,8),eyeMat);
+  eye.position.set(side*.1,1.9,.27);
+  group.add(eye);
  }
- draw();
- lastTime=0;
- animation=requestAnimationFrame(loop);
+ group.position.set(x,0,z);
+ scene.add(group);
+ return group;
 }
 
-function backToGames(){
- cancelAnimationFrame(animation);
- document.getElementById("playArea").style.display="none";
- document.getElementById("gamesSection").style.display="block";
- keys={};
+function makeTree(x,z){
+ const trunk=addBox(x,.8,z,.35,1.6,.35,0x80502c);
+ const leaves=addSphere(x,2,z,.95,0x187a4c);
+ return [trunk,leaves];
+}
+
+function setup(){
+ scene=new THREE.Scene();
+ scene.background=new THREE.Color(active==="space"?0x05091c:0x8dc9ed);
+ scene.fog=new THREE.Fog(active==="space"?0x05091c:0x8dc9ed,25,85);
+ camera=new THREE.PerspectiveCamera(65,850/480,.1,200);
+ renderer=new THREE.WebGLRenderer({antialias:true});
+ renderer.setSize(850,480);
+ renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+ renderer.shadowMap.enabled=true;
+ renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+ renderer.outputColorSpace=THREE.SRGBColorSpace;
+ box.innerHTML="";
+ box.appendChild(renderer.domElement);
+ clock=new THREE.Clock();
+
+ const ambient=new THREE.HemisphereLight(0xffffff,0x52627c,2);
+ scene.add(ambient);
+ const sun=new THREE.DirectionalLight(0xffffff,3);
+ sun.position.set(-12,22,12);
+ sun.castShadow=true;
+ sun.shadow.mapSize.set(2048,2048);
+ scene.add(sun);
+}
+
+function ground(color=0x39864e,size=100){
+ const g=addBox(0,-.25,0,size,.5,size,color);
+ g.receiveShadow=true;
+}
+
+function buildTag(){
+ ground(0x39864e,65);
+ // Park paths
+ addBox(0,.015,0,8,.04,65,0xc6b58d);
+ addBox(0,.02,0,65,.04,8,0xc6b58d);
+ // Arena walls
+ addBox(0,1,-31,65,2,1,0x315c75);
+ addBox(0,1,31,65,2,1,0x315c75);
+ addBox(-31,1,0,1,2,65,0x315c75);
+ addBox(31,1,0,1,2,65,0x315c75);
+ // Buildings and scenery
+ for(let i=0;i<12;i++){
+  let x=-25+(i%4)*16,z=-23+Math.floor(i/4)*22;
+  if(Math.abs(x)<12&&Math.abs(z)<12)continue;
+  addBox(x,2,z,5,4,5,0xc2a77d);
+  addBox(x,4.5,z,5.3,1,5.3,0x8c5545);
+  makeTree(x+4,z+4);
+ }
+ players=[
+  makePlayer(0xff405d,-8,0),
+  makePlayer(0x35bfff,8,0),
+  makePlayer(0xffd43b,0,8)
+ ];
+ tagged=0;
+ camera.position.set(0,34,38);
+ camera.lookAt(0,0,0);
+ help.textContent="Player 1: W A S D | Player 2: Arrow keys | Player 3: I J K L. Touch another player to tag them. The player marked IT must chase!";
+}
+
+function buildRace(){
+ ground(0x27613b,100);
+ // Track
+ const track=addBox(0,.05,0,32,.1,32,0x30343c);
+ const inner=addBox(0,.11,0,17,.12,17,0x27613b);
+ // Outer and inner track markings
+ for(let i=0;i<4;i++){
+  const a=i*Math.PI/2;
+  for(let j=0;j<4;j++){
+   const x=Math.cos(a)*20,z=Math.sin(a)*20;
+   addBox(x,.2,z,1,.05,1,0xffffff);
+  }
+ }
+ addBox(0,.2,-14,32,.15,.5,0xf1d36b);
+ car=new THREE.Group();
+ const chassis=new THREE.Mesh(
+  new THREE.BoxGeometry(1.6,.55,3),
+  new THREE.MeshStandardMaterial({color:0xd62d3e,metalness:.25,roughness:.3})
+ );
+ chassis.position.y=.65;chassis.castShadow=true;car.add(chassis);
+ const top=new THREE.Mesh(
+  new THREE.BoxGeometry(1.15,.65,1.4),
+  new THREE.MeshStandardMaterial({color:0x9eddf5,metalness:.5,roughness:.15})
+ );
+ top.position.set(0,1.15,-.1);car.add(top);
+ for(const x of [-.9,.9])for(const z of [-.95,.95]){
+  const wheel=new THREE.Mesh(
+   new THREE.CylinderGeometry(.35,.35,.22,20),
+   new THREE.MeshStandardMaterial({color:0x111111})
+  );
+  wheel.rotation.z=Math.PI/2;
+  wheel.position.set(x,.4,z);
+  car.add(wheel);
+ }
+ car.position.set(0,0,10);
+ scene.add(car);
+ camera.position.set(0,9,18);
+ camera.lookAt(0,0,0);
+ help.textContent="W / UP: accelerate | S / DOWN: reverse | A / LEFT and D / RIGHT: steer.";
+}
+
+function buildObby(){
+ ground(0x18294d,100);
+ platforms=[];
+ for(let i=0;i<13;i++){
+  const x=(i%2===0?0:4);
+  const z=12-i*5;
+  const p=addBox(x,.1,z,5,.5,5, i%3===0?0xf0a34d:0x37b8d9);
+  platforms.push(p);
+ }
+ players=[makePlayer(0xffc44d,0,12)];
+ camera.position.set(10,12,21);
+ camera.lookAt(0,0,-10);
+ help.textContent="Move with WASD or arrow keys. Press SPACE to jump. Reach the far end without falling!";
+}
+
+function buildSpace(){
+ ground(0x080b20,100);
+ for(let i=0;i<100;i++){
+  addSphere((Math.random()-.5)*80,Math.random()*30+2,(Math.random()-.5)*80,.08,0xffffff);
+ }
+ ship=new THREE.Group();
+ const body=new THREE.Mesh(
+  new THREE.ConeGeometry(.8,2.7,4),
+  new THREE.MeshStandardMaterial({color:0x36d9ff,metalness:.5,roughness:.2})
+ );
+ body.rotation.x=-Math.PI/2;
+ body.position.y=1;
+ ship.add(body);
+ ship.position.set(0,0,12);
+ scene.add(ship);
+ camera.position.set(0,14,24);
+ camera.lookAt(0,0,-5);
+ help.textContent="Move with WASD or arrow keys. Hold SPACE to fire. Destroy the enemy ships!";
+}
+
+function buildSoccer(){
+ ground(0x258b4d,65);
+ addBox(0,.04,0,30,.08,48,0x319e58);
+ for(let x of [-15,15])addBox(x,.1,0,.15,.15,48,0xffffff);
+ for(let z of [-24,24])addBox(0,.1,z,30,.15,.15,0xffffff);
+ addBox(0,2,-24,9,4,.5,0xffffff);
+ addBox(0,2,24,9,4,.5,0xffffff);
+ players=[makePlayer(0xffcc42,0,12)];
+ ball=addSphere(0,.7,0,.7,0xf7f7f7);
+ camera.position.set(0,22,28);
+ camera.lookAt(0,0,0);
+ help.textContent="Move with WASD or arrow keys. Press SPACE near the ball to kick it toward the goal!";
+}
+
+function start(mode){
+ active=mode;score=0;gameOver=false;spawnTimer=0;
+ obstacles=[];bullets=[];enemies=[];worldObjects=[];
+ players=[];keys={};tagged=0;
+ document.getElementById("librarySection").style.display="none";
+ document.getElementById("screen").style.display="block";
+ document.getElementById("gameTitle").textContent=games.find(g=>g[2]===mode)[0];
+ setup();
+ if(mode==="tag")buildTag();
+ if(mode==="race")buildRace();
+ if(mode==="obby")buildObby();
+ if(mode==="space")buildSpace();
+ if(mode==="soccer")buildSoccer();
+ clock.start();running=true;
+ animate();
+}
+
+function keyMove(p,left,right,up,down,speed,dt){
+ if(keys[left])p.position.x-=speed*dt;
+ if(keys[right])p.position.x+=speed*dt;
+ if(keys[up])p.position.z-=speed*dt;
+ if(keys[down])p.position.z+=speed*dt;
+ p.position.x=THREE.MathUtils.clamp(p.position.x,-29,29);
+ p.position.z=THREE.MathUtils.clamp(p.position.z,-29,29);
+}
+
+function moveTag(dt){
+ const controls=[
+  ["a","d","w","s"],
+  ["arrowleft","arrowright","arrowup","arrowdown"],
+  ["j","l","i","k"]
+ ];
+ players.forEach((p,i)=>{
+  keyMove(p,...controls[i],9,dt);
+ });
+ const it=players[tagged];
+ for(let i=0;i<3;i++){
+  if(i!==tagged&&players[i].position.distanceTo(it.position)<1.3){
+   tagged=i;
+  }
+ }
+ players.forEach((p,i)=>{
+  const mat=p.children[0].material;
+  mat.emissive=new THREE.Color(i===tagged?0x551111:0x000000);
+ });
+ camera.position.lerp(new THREE.Vector3(0,34,38),.03);
+ camera.lookAt(0,0,0);
+ hud.innerHTML="🏃 PLAYER "+(tagged+1)+" IS IT!<br>Score: "+score;
+ score+=dt*.15;
+}
+
+function moveRace(dt){
+ if(keys["w"]||keys["arrowup"])car.position.z-=16*dt;
+ if(keys["s"]||keys["arrowdown"])car.position.z+=8*dt;
+ if(keys["a"]||keys["arrowleft"])car.rotation.y+=2*dt;
+ if(keys["d"]||keys["arrowright"])car.rotation.y-=2*dt;
+ const forward=new THREE.Vector3(0,0,-1).applyQuaternion(car.quaternion);
+ car.position.addScaledVector(forward,(keys["w"]||keys["arrowup"]?8:0)*dt);
+ car.position.x=THREE.MathUtils.clamp(car.position.x,-16,16);
+ car.position.z=THREE.MathUtils.clamp(car.position.z,-16,16);
+ camera.position.lerp(new THREE.Vector3(car.position.x,8,car.position.z+10),.08);
+ camera.lookAt(car.position);
+ score+=dt*10;
+ hud.innerHTML="🏁 DISTANCE: "+Math.floor(score);
+}
+
+function moveObby(dt){
+ const p=players[0];
+ if(keys["a"]||keys["arrowleft"])p.position.x-=8*dt;
+ if(keys["d"]||keys["arrowright"])p.position.x+=8*dt;
+ if(keys["w"]||keys["arrowup"])p.position.z-=8*dt;
+ if(keys["s"]||keys["arrowdown"])p.position.z+=8*dt;
+ if((keys[" "]||keys["arrowup"])&&p.position.y<=.05)p.userData.vy=9;
+ p.userData.vy=(p.userData.vy||0)-19*dt;
+ p.position.y+=p.userData.vy*dt;
+ if(p.position.y<0)p.position.y=0,p.userData.vy=0;
+ let onPlatform=false;
+ platforms.forEach(pl=>{
+  if(Math.abs(p.position.x-pl.position.x)<2.7&&Math.abs(p.position.z-pl.position.z)<2.7&&p.position.y<.8&&p.position.y>=0){
+   onPlatform=true;p.position.y=0;p.userData.vy=0;
+  }
+ });
+ if(p.position.y< -4||Math.abs(p.position.x)>22||p.position.z< -55){
+  p.position.set(0,0,12);score=0;
+ }
+ if(p.position.z< -48){
+  hud.innerHTML="🏆 YOU WON!";
+ }else hud.innerHTML="⭐ PROGRESS: "+Math.max(0,Math.floor((12-p.position.z)/.6))+"%";
+ camera.position.lerp(new THREE.Vector3(p.position.x+10,12,p.position.z+12),.05);
+ camera.lookAt(p.position.x,0,p.position.z-5);
+}
+
+function moveSpace(dt){
+ if(keys["a"]||keys["arrowleft"])ship.position.x-=12*dt;
+ if(keys["d"]||keys["arrowright"])ship.position.x+=12*dt;
+ if(keys["w"]||keys["arrowup"])ship.position.z-=12*dt;
+ if(keys["s"]||keys["arrowdown"])ship.position.z+=12*dt;
+ ship.position.x=THREE.MathUtils.clamp(ship.position.x,-25,25);
+ ship.position.z=THREE.MathUtils.clamp(ship.position.z,-20,20);
+ spawnTimer+=dt;
+ if(spawnTimer>1){
+  spawnTimer=0;
+  const e=addSphere((Math.random()-.5)*35,1,-30,1,0xff4d72);
+  enemies.push(e);
+ }
+ if(keys[" "]&&bullets.length<20){
+  const b=addSphere(ship.position.x,1,ship.position.z-2,.2,0x66eaff);
+  bullets.push(b);
+ }
+ bullets.forEach(b=>b.position.z-=30*dt);
+ enemies.forEach(e=>{
+  e.position.z+=7*dt;
+  bullets.forEach(b=>{
+   if(e.position.distanceTo(b.position)<1.2){
+    e.position.z=100;b.position.z=-100;score+=10;
+   }
+  });
+ });
+ enemies=enemies.filter(e=>e.position.z<30);
+ bullets=bullets.filter(b=>b.position.z>-40);
+ hud.innerHTML="🚀 SCORE: "+score;
+}
+
+function moveSoccer(dt){
+ const p=players[0];
+ keyMove(p,"a","d","w","s",8,dt);
+ if(keys["arrowleft"])p.position.x-=8*dt;
+ if(keys["arrowright"])p.position.x+=8*dt;
+ if(keys["arrowup"])p.position.z-=8*dt;
+ if(keys["arrowdown"])p.position.z+=8*dt;
+ if(ball.position.distanceTo(new THREE.Vector3(p.position.x,0,p.position.z))<2&&keys[" "]){
+  ball.position.z-=18*dt;
+  ball.position.x+=(ball.position.x-p.position.x)*dt*3;
+ }
+ ball.position.z=THREE.MathUtils.clamp(ball.position.z,-24,24);
+ if(ball.position.z< -23&&Math.abs(ball.position.x)<4){
+  score++;ball.position.set(0,.7,0);
+ }
+ camera.position.lerp(new THREE.Vector3(p.position.x,22,p.position.z+25),.04);
+ camera.lookAt(p.position.x,0,p.position.z-4);
+ hud.innerHTML="⚽ GOALS: "+score;
+}
+
+function animate(){
+ if(!running)return;
+ frame=requestAnimationFrame(animate);
+ const dt=Math.min(clock.getDelta(),.04);
+ if(active==="tag")moveTag(dt);
+ if(active==="race")moveRace(dt);
+ if(active==="obby")moveObby(dt);
+ if(active==="space")moveSpace(dt);
+ if(active==="soccer")moveSoccer(dt);
+ renderer.render(scene,camera);
+}
+
+function restart(){
+ running=false;
+ if(renderer)renderer.dispose();
+ start(active);
+}
+
+function back(){
+ running=false;
+ cancelAnimationFrame(frame);
+ if(renderer)renderer.dispose();
+ document.getElementById("screen").style.display="none";
+ document.getElementById("librarySection").style.display="block";
 }
 
 window.addEventListener("keydown",e=>{
@@ -177,225 +488,14 @@ window.addEventListener("keydown",e=>{
  keys[k]=true;
 });
 window.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
-
-function down(...list){return list.some(k=>keys[k])}
-function move(p,left,right,up,downKey,speed=4){
- if(down(left))p.x-=speed;
- if(down(right))p.x+=speed;
- if(down(up))p.y-=speed;
- if(down(downKey))p.y+=speed;
- p.x=Math.max(15,Math.min(835,p.x));
- p.y=Math.max(15,Math.min(465,p.y));
-}
-function rect(x,y,w,h,color){
- ctx.fillStyle=color;ctx.fillRect(x,y,w,h);
-}
-function circle(x,y,r,color){
- ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
-}
-function text(t,x,y,size=20,color="white"){
- ctx.fillStyle=color;ctx.font="bold "+size+"px Arial";ctx.fillText(t,x,y);
-}
-
-function loop(t){
- if(!lastTime)lastTime=t;
- let dt=Math.min((t-lastTime)/16,2);
- lastTime=t;
- update(dt);
- draw();
- animation=requestAnimationFrame(loop);
-}
-
-function update(dt){
- state.time+=dt;
- const p=state.player;
- if(currentGame==="Tag Game"){
-  const ps=state.players;
-  move(ps[0],"a","d","w","s",3.5*dt);
-  move(ps[1],"arrowleft","arrowright","arrowup","arrowdown",3.5*dt);
-  move(ps[2],"j","l","i","k",3.5*dt);
-  const tagged=ps[state.tagged];
-  for(let i=0;i<3;i++){
-   if(i!==state.tagged){
-    const other=ps[i];
-    if(Math.hypot(tagged.x-other.x,tagged.y-other.y)<32){
-     state.tagged=i;
-     document.getElementById("status").textContent=ps[i].name+" is IT! Keep chasing!";
-    }
-   }
-  }
-  return;
+window.addEventListener("blur",()=>keys={});
+window.addEventListener("resize",()=>{
+ if(renderer&&camera){
+  const w=box.clientWidth;
+  camera.aspect=w/480;camera.updateProjectionMatrix();
+  renderer.setSize(w,480);
  }
-
- if(currentGame==="Neon Snake"){
-  state.tick+=dt;
-  if(down("w","arrowup")){state.dx=0;state.dy=-1}
-  if(down("s","arrowdown")){state.dx=0;state.dy=1}
-  if(down("a","arrowleft")){state.dx=-1;state.dy=0}
-  if(down("d","arrowright")){state.dx=1;state.dy=0}
-  if(state.tick>7){
-   state.tick=0;
-   let head={x:state.snake[0].x+state.dx,y:state.snake[0].y+state.dy};
-   head.x=(head.x+30)%30;head.y=(head.y+16)%16;
-   state.snake.unshift(head);
-   if(head.x===state.food.x&&head.y===state.food.y){
-    state.score++;
-    state.food={x:Math.floor(Math.random()*30),y:Math.floor(Math.random()*16)};
-   }else state.snake.pop();
-   if(state.snake.slice(1).some(s=>s.x===head.x&&s.y===head.y)){
-    state.snake=[{x:10,y:10}];state.score=0;
-   }
-  }
-  return;
- }
-
- if(currentGame==="Maze Runner"){
-  move(p,"a","d","w","s",3*dt);
-  for(const w of state.walls){
-   if(p.x+12>w[0]&&p.x-12<w[0]+w[2]&&p.y+12>w[1]&&p.y-12<w[1]+w[3]){
-    if(down("a","arrowleft"))p.x+=3*dt;
-    if(down("d","arrowright"))p.x-=3*dt;
-    if(down("w","arrowup"))p.y+=3*dt;
-    if(down("s","arrowdown"))p.y-=3*dt;
-   }
-  }
-  if(p.x>800&&p.y>400){
-   document.getElementById("status").textContent="You escaped the maze! 🎉";
-  }
-  return;
- }
-
- if(currentGame==="Hoops Pro"){
-  move(p,"a","d","w","s",4*dt);
-  if(down(" ","enter")&&!state.ball){
-   state.ball={x:p.x,y:p.y-15,vx:(420-p.x)*.025,vy:-9};
-  }
-  if(state.ball){
-   state.ball.x+=state.ball.vx*dt;
-   state.ball.y+=state.ball.vy*dt;
-   state.ball.vy+=.25*dt;
-   if(state.ball.y<75&&state.ball.x>365&&state.ball.x<485){
-    state.baskets++;state.ball=null;
-   }else if(state.ball.y>480)state.ball=null;
-  }
-  return;
- }
-
- if(currentGame==="Battle Zone"||currentGame==="Space Defender"){
-  move(p,"a","d","w","s",4*dt);
-  state.spawn+=dt;
-  if(down(" ")&&state.spawn>8){
-   state.spawn=0;
-   state.items.push({x:p.x,y:p.y-15,v:-8,shot:true});
-  }
-  if(state.items.filter(i=>!i.shot).length<5&&Math.random()<.025*dt){
-   state.items.push({x:Math.random()*800+20,y:-10,v:2+Math.random()*2});
-  }
-  state.items.forEach(i=>i.y+=i.v*dt);
-  for(const i of state.items){
-   if(i.shot){
-    for(const enemy of state.items){
-     if(!enemy.shot&&Math.hypot(i.x-enemy.x,i.y-enemy.y)<18){
-      enemy.dead=true;i.dead=true;state.score++;
-     }
-    }
-   }else if(Math.hypot(i.x-p.x,i.y-p.y)<22){
-    i.dead=true;state.score=Math.max(0,state.score-1);
-   }
-  }
-  state.items=state.items.filter(i=>!i.dead&&i.y<500&&i.y>-30);
-  return;
- }
-
- if(currentGame==="Turbo Trials"||currentGame==="Pixel Racer"){
-  if(down("a","arrowleft"))p.x-=5*dt;
-  if(down("d","arrowright"))p.x+=5*dt;
-  p.x=Math.max(60,Math.min(790,p.x));
-  state.spawn+=dt;
-  if(state.spawn>22){
-   state.spawn=0;
-   state.items.push({x:80+Math.random()*690,y:-40});
-  }
-  state.items.forEach(i=>i.y+=(currentGame==="Turbo Trials"?5:7)*dt);
-  state.items=state.items.filter(i=>i.y<520);
-  state.items.forEach(i=>{
-   if(Math.abs(i.x-p.x)<38&&Math.abs(i.y-400)<45){
-    state.score=0;
-    i.y=600;
-   }
-  });
-  state.score+=.03*dt;
-  return;
- }
-
- if(currentGame==="Neon Dash"){
-  if(down(" ","w","arrowup")&&p.y>=390)p.vy=-11;
-  p.vy=(p.vy||0)+.5*dt;
-  p.y+=p.vy*dt;
-  if(p.y>390){p.y=390;p.vy=0}
-  state.spawn+=dt;
-  if(state.spawn>55){
-   state.spawn=0;state.items.push({x:850,y:400});
-  }
-  state.items.forEach(i=>i.x-=6*dt);
-  state.items=state.items.filter(i=>i.x>-30);
-  state.items.forEach(i=>{
-   if(Math.abs(i.x-p.x)<25&&p.y>360)state.score=0;
-  });
-  state.score+=.05*dt;
- }
-}
-
-function draw(){
- ctx.clearRect(0,0,850,480);
- rect(0,440,850,40,"#18243c");
- if(currentGame==="Tag Game"){
-  state.players.forEach((p,i)=>{
-   circle(p.x,p.y,19,p.color);
-   text(p.name,p.x-14,p.y-28,14);
-   if(i===state.tagged)text("IT!",p.x-10,p.y+42,16,"#ff7777");
-  });
-  text("TAG THE OTHER PLAYERS!",250,35,25);
-  text("P1: WASD     P2: ARROWS     P3: I J K L",180,465,16);
- }else if(currentGame==="Neon Snake"){
-  state.snake.forEach((s,i)=>rect(s.x*28+1,s.y*28+1,25,25,i?"#36c9a0":"#b6ff70"));
-  circle(state.food.x*28+14,state.food.y*28+14,10,"#ff5577");
-  text("Score: "+state.score,15,25);
- }else if(currentGame==="Maze Runner"){
-  state.walls.forEach(w=>rect(...w,"#637da9"));
-  rect(790,410,40,40,"#43e68c");
-  circle(state.player.x,state.player.y,13,"#ffdc5e");
-  text("Find the green exit!",20,25);
- }else if(currentGame==="Hoops Pro"){
-  rect(350,55,150,12,"#f2a65a");
-  circle(425,65,23,"#ffcc55");
-  rect(390,80,70,8,"#ff5577");
-  circle(state.player.x,state.player.y,15,"#53dfff");
-  if(state.ball)circle(state.ball.x,state.ball.y,9,"#ff9c42");
-  text("Baskets: "+state.baskets,20,30);
- }else if(currentGame==="Battle Zone"||currentGame==="Space Defender"){
-  state.items.forEach(i=>circle(i.x,i.y,i.shot?5:14,i.shot?"#fff":"#ff5577"));
-  circle(state.player.x,state.player.y,17,"#52e4ff");
-  text("Score: "+state.score,20,30);
- }else if(currentGame==="Turbo Trials"||currentGame==="Pixel Racer"){
-  rect(200,0,450,480,"#202b3e");
-  rect(410,0,8,480,"#f5e8a5");
-  for(let y=0;y<480;y+=60)rect(418,y,5,30,"white");
-  state.items.forEach(i=>rect(i.x-17,i.y-25,34,50,"#ff5577"));
-  rect(state.player.x-20,375,40,60,"#55dfff");
-  text("Score: "+Math.floor(state.score),20,30);
- }else if(currentGame==="Neon Dash"){
-  rect(0,420,850,20,"#384e70");
-  state.items.forEach(i=>rect(i.x,370,25,50,"#ff5577"));
-  rect(state.player.x-15,state.player.y-30,30,30,"#58e5ff");
-  text("Score: "+Math.floor(state.score),20,30);
- }
- document.getElementById("status").textContent=
-  currentGame==="Tag Game"?"Player "+(state.tagged+1)+" is IT!":
-  currentGame==="Neon Snake"?"Score: "+state.score:
-  currentGame==="Hoops Pro"?"Baskets: "+state.baskets:
-  "Score: "+Math.floor(state.score||0);
-}
+});
 </script>
 </body>
 </html>
